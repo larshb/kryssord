@@ -18,6 +18,12 @@
 
 
   <style id="compiled-css" type="text/css">
+    a.plain {
+      color: #33b !important;
+      font-weight: bold;
+      text-decoration: none;
+    }
+
     td {
       font-family: 'Roboto Mono', monospace;
     }
@@ -55,10 +61,10 @@
     }
 
     input {
+      text-transform: uppercase;
       /* Stupid iphone */
       border-radius: 0;
       -webkit-appearance: none;
-      text-transform: uppercase;
     }
 
     td.mdl-data-table__cell--non-numeric {
@@ -112,22 +118,13 @@
         dataType: 'json',
         success: function (data) {
           document.getElementById("overlay").style.display = "none";
-          //console.log(data.data.solutions);
-          //var words = data.data.col1;
-          //words = words.concat(data.data.col2);
-          //console.log(data.data.col2);
           var words = data.results;
-          console.log(words);
-          bubbleSort(words);
           words.forEach(function (element) {
-            console.log(element);
 
             var txt2 = document.createTextNode(element.length);
             var td2 = document.createElement("td");
             td2.appendChild(txt2);
             td2.style.width = "10px";
-            //td2.className = "mdl-data-table__cell--non-numeric";
-            //td2.style.width="0%";
             td2.style.margin = 0;
 
             var tr = document.createElement("tr");
@@ -138,16 +135,19 @@
             tr.appendChild(td2);
             tr.appendChild(td);
             table.appendChild(tr);
-            //return false;
           })
           if (words.length == 0) {
-            console.log('lol')
-            $('<tr>\
-        		<td class="mdl-data-table__cell--non-numeric">\
-            Ingen treff :( \
-           </td>\
-          </tr>').appendTo(table);
+            footer = " Ingen treff :( ";
+          } else {
+            footer = `${words.length}/${data.nresults}`;
           }
+          $('<tr><td></td>' +
+            ' <td href="#" class="mdl-data-table__cell--non-numeric"> ' +
+            `  <a class="plain" href="${data.uri}">` +
+            footer +
+            '  </a>' +
+            ' </td> ' +
+            '</tr>').appendTo(table);
         }
       });
     }
@@ -155,21 +155,6 @@
     sok.on("click", function () {
       sokSynonym();
     })
-
-    function bubbleSort(a) {
-      var swapped;
-      do {
-        swapped = false;
-        for (var i = 0; i < a.length - 1; i++) {
-          if (a[i].length > a[i + 1].length) {
-            var temp = a[i];
-            a[i] = a[i + 1];
-            a[i + 1] = temp;
-            swapped = true;
-          }
-        }
-      } while (swapped);
-    }
 
 
 
