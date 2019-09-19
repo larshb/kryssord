@@ -1,57 +1,162 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-  
-  
-  
-  <!-- Imported -->
-  <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.js" defer></script>
-  <link href="https://fonts.googleapis.com/css?family=Roboto+Mono" rel="stylesheet" defer>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" defer>
-  <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.brown-amber.min.css" defer>
-  <script defer src="https://code.getmdl.io/1.3.0/material.min.js" defer></script>
-  
-  <!-- Local -->
-  <link type="text/css" href="stylesheet.css" defer>
   <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
-  <title>Kryssordbok</title>
+  <link type="text/css" href="stylesheet.css" />
+  <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.js"></script>
+  <title>Kryssord.org mobil v3</title>
 
-  <script type="text/javascript" src="script.js" defer></script>
-  
+  <script type="text/javascript">//<![CDATA[
+
+
+    const API = 'https://kryssord.herokuapp.com/search/'
+
+
+    var button = $("button");
+    var sok = $("#soksynonymer");
+
+    function addWildcard() {
+      console.log("Adding wildcard...");
+      var losning = document.getElementById("losning");
+      losning.value = losning.value + "?";
+      button.focus
+    }
+
+    function sokSynonym() {
+      var top_banner = $("top-banner");
+      top_banner.addClass("collapse-height");
+      document.getElementById("overlay").style.display = "block";
+
+      console.log("Click!")
+
+      var sokeord = document.getElementById("sokeord").value;
+      var losning = document.getElementById("losning").value;
+
+      //Clear table
+      var table = document.getElementById("output");
+      while (table.firstChild) {
+        table.removeChild(table.firstChild);
+      }
+
+      path = sokeord
+      if (losning) {
+        path += "/" + losning
+      }
+
+      $.ajax({
+        url: API + path,
+        type: 'GET',
+        dataType: 'json',
+        success: function (data) {
+          document.getElementById("overlay").style.display = "none";
+          //console.log(data.data.solutions);
+          //var words = data.data.col1;
+          //words = words.concat(data.data.col2);
+          //console.log(data.data.col2);
+          var words = data.results;
+          console.log(words);
+          bubbleSort(words);
+          words.forEach(function (element) {
+            console.log(element);
+
+            var txt2 = document.createTextNode(element.length);
+            var td2 = document.createElement("td");
+            td2.appendChild(txt2);
+            td2.style.width = "10px";
+            //td2.className = "mdl-data-table__cell--non-numeric";
+            //td2.style.width="0%";
+            td2.style.margin = 0;
+
+            var tr = document.createElement("tr");
+            var td = document.createElement("td");
+            var txt = document.createTextNode(element);
+            td.appendChild(txt);
+            td.className = "mdl-data-table__cell--non-numeric";
+            tr.appendChild(td2);
+            tr.appendChild(td);
+            table.appendChild(tr);
+            //return false;
+          })
+          if (words.length == 0) {
+            console.log('lol')
+            $('<tr>\
+        		<td class="mdl-data-table__cell--non-numeric">\
+            Ingen treff :( \
+           </td>\
+          </tr>').appendTo(table);
+          }
+        }
+      });
+    }
+
+    sok.on("click", function () {
+      sokSynonym();
+    })
+
+    function bubbleSort(a) {
+      var swapped;
+      do {
+        swapped = false;
+        for (var i = 0; i < a.length - 1; i++) {
+          if (a[i].length > a[i + 1].length) {
+            var temp = a[i];
+            a[i] = a[i + 1];
+            a[i + 1] = temp;
+            swapped = true;
+          }
+        }
+      } while (swapped);
+    }
+
+
+
+  //]]></script>
+
 </head>
+
 <body>
-<div align=center>
-  
-  <top-banner></top-banner>
-  <form action="#" onsubmit="sokSynonym(); return false;">
-    <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-      <input class="mdl-textfield__input" type="search" required id="sokeord">
-      <label class="mdl-textfield__label" for="sokeord">Sp&oslash;rreord</label>
-    </div>
-    <br />
-    <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-      <input class="mdl-textfield__input" type="search" id="losning">
-      <label class="mdl-textfield__label" for="losning">L&oslash;sningsord</label>
-    </div>
-    <br />
-    <!-- Raised button with ripple -->
-    <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" onclick="addWildcard();" type="button">
-      ?
-    </button>
-    <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="submit" id="soksynonymer">
-      S&oslash;k
-    </button>
+  <link href="https://fonts.googleapis.com/css?family=Roboto+Mono" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.brown-amber.min.css" />
+  <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
 
-  </form>
-  <br>
-  <div id="overlay">
-    <div style="top: 50%" class="mdl-spinner mdl-js-spinner is-active"></div>
+
+  <!-- Textfield with Floating Label -->
+  <div align=center>
+    <!--"<img src="https://www.slate.com/content/dam/slate/articles/life/gaming/2016/03/160308_GAME_crossword-scandal.jpg.CROP.promo-xlarge2.jpg" alt="crossword puzzle">-->
+    <top-banner></top-banner>
+    <form action="#" onsubmit="sokSynonym(); return false;">
+      <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+        <input class="mdl-textfield__input" type="search" required id="sokeord">
+        <label class="mdl-textfield__label" for="sokeord">Sp&oslash;rreord</label>
+      </div>
+      <br />
+      <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+        <input class="mdl-textfield__input" type="search" id="losning">
+        <label class="mdl-textfield__label" for="losning">L&oslash;sningsord</label>
+      </div>
+      <br />
+      <!-- Raised button with ripple -->
+      <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" onclick="addWildcard();"
+        type="button">
+        ?
+      </button>
+      <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="submit" id="soksynonymer">
+        S&oslash;k
+      </button>
+
+    </form>
+    <br>
+    <div id="overlay">
+      <div style="top: 50%" class="mdl-spinner mdl-js-spinner is-active"></div>
+    </div>
+    <table class="mdl-data-table" id="output">
+      <!--Table for search results-->
+    </table>
+
   </div>
-  <table class="mdl-data-table" id="output">
-    <!-- Table for search results -->
-  </table>
 
-</div>
 </body>
-  
+
 </html>
