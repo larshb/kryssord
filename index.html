@@ -84,10 +84,10 @@
     var button = $("button");
     var sok = $("#soksynonymer");
 
-    function addWildcard() {
+    function addWildcard(wildcard) {
       console.log("Adding wildcard...");
       var losning = document.getElementById("losning");
-      losning.value = losning.value + "?";
+      losning.value = losning.value + wildcard;
       losning.focus();
     }
 
@@ -172,7 +172,48 @@
   <!-- Textfield with Floating Label -->
   <div align=center>
     <!--"<img src="https://www.slate.com/content/dam/slate/articles/life/gaming/2016/03/160308_GAME_crossword-scandal.jpg.CROP.promo-xlarge2.jpg" alt="crossword puzzle">-->
-    <top-banner></top-banner>
+    <top-banner>
+      <button id="show-dialog" style="margin: 10px; float: right;"
+        class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab">
+        <i class="material-icons">help</i>
+      </button>
+      <dialog class="mdl-dialog">
+        <h4 class="mdl-dialog__title">Kryssordbok for mobil</h4>
+        <div class="mdl-dialog__content">
+          <p>
+            Laget for moro skyld. All funksjonalitet knyttet til å finne ord krediteres <a
+              href="//kryssord.org">kryssord.org</a>
+          </p>
+          <p>
+            Bruk <button style="" class="mdl-button--raised mdl-js-ripple-effect">
+              <i style="font-size: 1em;" class="material-icons">crop_din</i>
+            </button> for å sette inn jokertegn for en enkelt bokstav og <button style=""
+              class="mdl-button--raised mdl-js-ripple-effect">
+              <i style="font-size: 1em;" class="material-icons">more_horiz</i>
+            </button> for å sette inn jokertegn for ubestemt antall bokstaver.
+          </p>
+        </div>
+        <div class="mdl-dialog__actions">
+          <!-- <button type="button" class="mdl-button">Agree</button> -->
+          <button type="button" class="mdl-button close">Lukk</button>
+        </div>
+      </dialog>
+      <script>
+        var dialog = document.querySelector('dialog');
+        var showDialogButton = document.querySelector('#show-dialog');
+        if (!dialog.showModal) {
+          dialogPolyfill.registerDialog(dialog);
+        }
+        showDialogButton.addEventListener('click', function () {
+          dialog.showModal();
+        });
+        dialog.querySelector('.close').addEventListener('click', function () {
+          dialog.close();
+        });
+
+      </script>
+    </top-banner>
+
     <form action="#" onsubmit="sokSynonym(); return false;">
       <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
         <input class="mdl-textfield__input" type="search" required id="sokeord">
@@ -185,11 +226,16 @@
       </div>
       <br />
       <!-- Raised button with ripple -->
-      <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" onclick="addWildcard();"
+      <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" onclick="addWildcard('?');"
         type="button">
-        ?
+        <i class="material-icons">crop_din</i>
       </button>
-      <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="submit" id="soksynonymer">
+      <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" onclick="addWildcard('*');"
+        type="button">
+        <i class="material-icons">more_horiz</i>
+      </button>
+      <button style="font-weight:bold" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect"
+        type="submit" id="soksynonymer">
         S&oslash;k
       </button>
 
