@@ -102,6 +102,8 @@ function sokSynonym() {
   var sokeord = document.getElementById("sokeord").value;
   var losning = document.getElementById("losning").value;
 
+  losning = losning.replace('?', '%3F');
+
   //Clear table
   var table = document.getElementById("output");
   while (table.firstChild) {
