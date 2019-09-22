@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <title>Kryssord.org mobil v4</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="googlebot" content="noindex, nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+    
+
+      <script type="text/javascript" src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+
+  <link rel="stylesheet" id="compiled-css" type="text/css" href=".css">
+
+
+  
+</head>
+<body>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Mono">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.brown-amber.min.css">
+<!--<script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>-->
+
+<!-- Textfield with Floating Label -->
+<center>
+  <top-banner>
+    <button id="show-dialog" style="margin: 10px; float: right;" class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab">
+      <i class="material-icons">help</i>
+    </button>
+    
+    <div id="info" class="mdl-dialog mdl-card mdl-shadow--2dp">
+    <!--<dialog class="mdl-dialog">-->
+    <!--Bad cross-platform support for dialogs-->
+      <h4 class="mdl-dialog__title">Kryssordbok for mobil</h4>
+      <div class="mdl-dialog__content">
+        <p>
+          Laget for moro skyld. All funksjonalitet knyttet til &#xE5; finne ord krediteres <a href="//kryssord.org">kryssord.org</a>
+        </p>
+        <p>
+        Bruk <button style class="mdl-button--raised mdl-js-ripple-effect">
+  <i style="font-size: 1em;" class="material-icons">crop_din</i>
+</button> for &#xE5; sette inn jokertegn for en enkelt bokstav og <button style class="mdl-button--raised mdl-js-ripple-effect">
+  <i style="font-size: 1em;" class="material-icons">more_horiz</i>
+</button> for &#xE5; sette inn jokertegn for ubestemt antall bokstaver.
+        </p>
+      </div>
+      <div class="mdl-dialog__actions">
+        <!-- <button type="button" class="mdl-button">Agree</button> -->
+        <button type="button" class="mdl-button close">Lukk</button>
+      </div>
+    <!--</dialog>-->
+    </div>
+  </top-banner>
+
+  <form action="#" onsubmit="sokSynonym(); return false;">
+    <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+      <input class="mdl-textfield__input" type="search" required id="sokeord">
+      <label class="mdl-textfield__label" for="sokeord">Sp&#xF8;rreord</label>
+    </div>
+    <br>
+    <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+      <input class="mdl-textfield__input" type="search" id="losning">
+      <label class="mdl-textfield__label" for="losning">L&#xF8;sningsord</label>
+    </div>
+    <br>
+    <!-- Raised button with ripple -->
+    <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" onclick="addWildcard(&apos;?&apos;);" type="button">
+      <i class="material-icons">crop_din</i>
+    </button>
+    <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" onclick="addWildcard(&apos;*&apos;);" type="button">
+      <i class="material-icons">more_horiz</i>
+    </button>
+    <button style="font-weight:bold" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="submit" id="soksynonymer">
+      S&#xF8;k
+    </button>
+
+  </form>
+  <br>
+  <div id="overlay">
+    <div style="top: 50%" class="mdl-spinner mdl-js-spinner is-active"></div>
+  </div>
+  <table class="mdl-data-table" id="output">
+    <!--Table for search results-->
+  </table>
+
+</center>
+
+
+<!-- Top overlay illustrative -->
+<header>
+  <table class="tiles" align="center">
+    <tbody>
+      <tr id="tilerow"><!-- Container for crossword tiles --></tr>
+    </tbody>
+  </table>
+</header>
+
+
+  
+
+  <script defer type="text/javascript" src=".js"></script>
+
+  
+</body>
+</html>
