@@ -1,0 +1,14 @@
+{
+  "short_name": "Kryssordbok",
+  "name": "App for kryssord.org",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/index.html",
+  "display": "fullscreen",
+  "orientation": "portrait"
+}
