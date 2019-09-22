@@ -13,6 +13,10 @@ a.plain {
   text-decoration: none;
 }
 
+button.plain {
+  border: 0px;  
+}
+
 td {
   font-family: 'Roboto Mono', monospace;
 }
