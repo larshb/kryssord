@@ -12,352 +12,102 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
 
-  <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 
-  <link rel="stylesheet" type="text/css" href="/css/result-light.css">
+    
 
-  <script type="text/javascript" src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+      <script type="text/javascript" src="https://code.getmdl.io/1.3.0/material.min.js"></script>
 
-  <style id="compiled-css" type="text/css">
-    .mdl-dialog#info {
-      display: none;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      -webkit-transform: translate(-50%, -50%);
-      transform: translate(-50%, -50%);
-    }
-
-    a.plain {
-      color: #33b !important;
-      font-weight: bold;
-  text-decoration: none;
-}
-
-td {
-  font-family: 'Roboto Mono', monospace;
-}
-
-top-banner {
-  background: url("https://www.slate.com/content/dam/slate/articles/life/gaming/2016/03/160308_GAME_crossword-scandal.jpg.CROP.promo-xlarge2.jpg");
-  background-size: cover;
-  height: 64px;
-  width: 100%;
-  display: inline-block;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
-}
-
-.collapse-height {
-  transition: all 0.5s ease-out;
-  height: 0px;
-  opacity: 0;
-}
-
-#overlay {
-  position: fixed;
-  display: none;
-  width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(255, 255, 255, 0.5);
-  z-index: 2;
-}
-
-.mdl-data-table {
-  width: 100%
-}
-
-input {
-  text-transform: uppercase;
-  /* Stupid iphone */
-  border-radius: 0;
-  -webkit-appearance: none;
-}
-
-    td.mdl-data-table__cell--non-numeric {
-      text-transform: uppercase;
-    }
-
-    /* Top overlay illustrative */
-
-    header {
-      position: absolute;
-      width: 100%;
-      top: 0;
-    }
-
-    .tiles {
-      margin-top: 1px;
-      border: 0px;
-      font-family: sans-serif;
-      font-size: 8pt;
-      border-collapse: collapse;
-    }
-
-    .indef {
-      border: 1px dashed !important;
-      width: 20px !important;
-      background: rgba(255, 255, 255, 0.5);
-    }
-
-    .dim {
-      color: #ddd;
-    }
-
-    #tilerow>td {
-      background: white;
-      text-align: center;
-      line-height: 12px;
-      height: 12px;
-      width: 12px;
-      border: 1px solid;
-      padding: 0px;
-    }
-  </style>
+  <link rel="stylesheet" id="compiled-css" type="text/css" href=".css">
 
 
-
+  
 </head>
-
 <body>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Mono" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
-  <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.brown-amber.min.css" />
-  <!--<script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>-->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Mono">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.brown-amber.min.css">
+<!--<script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>-->
 
-  <!-- Textfield with Floating Label -->
-  <center>
-    <top-banner>
-      <button id="show-dialog" style="margin: 10px; float: right;"
-        class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab">
-        <i class="material-icons">help</i>
-      </button>
-
-      <div id="info" class="mdl-dialog mdl-card mdl-shadow--2dp">
-        <!--<dialog class="mdl-dialog">-->
-        <!--Bad cross-platform support for dialogs-->
-        <h4 class="mdl-dialog__title">Kryssordbok for mobil</h4>
-        <div class="mdl-dialog__content">
-          <p>
-            Laget for moro skyld. All funksjonalitet knyttet til å finne ord krediteres <a
-              href="//kryssord.org">kryssord.org</a>
-          </p>
-          <p>
-            Bruk <button style="" class="mdl-button--raised mdl-js-ripple-effect">
-              <i style="font-size: 1em;" class="material-icons">crop_din</i>
-            </button> for å sette inn jokertegn for en enkelt bokstav og <button style=""
-              class="mdl-button--raised mdl-js-ripple-effect">
-              <i style="font-size: 1em;" class="material-icons">more_horiz</i>
-            </button> for å sette inn jokertegn for ubestemt antall bokstaver.
-          </p>
-        </div>
-        <div class="mdl-dialog__actions">
-          <!-- <button type="button" class="mdl-button">Agree</button> -->
-          <button type="button" class="mdl-button close">Lukk</button>
-        </div>
-        <!--</dialog>-->
+<!-- Textfield with Floating Label -->
+<center>
+  <top-banner>
+    <button id="show-dialog" style="margin: 10px; float: right;" class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab">
+      <i class="material-icons">help</i>
+    </button>
+    
+    <div id="info" class="mdl-dialog mdl-card mdl-shadow--2dp">
+    <!--<dialog class="mdl-dialog">-->
+    <!--Bad cross-platform support for dialogs-->
+      <h4 class="mdl-dialog__title">Kryssordbok for mobil</h4>
+      <div class="mdl-dialog__content">
+        <p>
+          Laget for moro skyld. All funksjonalitet knyttet til &#xE5; finne ord krediteres <a href="//kryssord.org">kryssord.org</a>
+        </p>
+        <p>
+        Bruk <button style class="mdl-button--raised mdl-js-ripple-effect">
+  <i style="font-size: 1em;" class="material-icons">crop_din</i>
+</button> for &#xE5; sette inn jokertegn for en enkelt bokstav og <button style class="mdl-button--raised mdl-js-ripple-effect">
+  <i style="font-size: 1em;" class="material-icons">more_horiz</i>
+</button> for &#xE5; sette inn jokertegn for ubestemt antall bokstaver.
+        </p>
       </div>
-    </top-banner>
-
-    <form action="#" onsubmit="sokSynonym(); return false;">
-      <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-        <input class="mdl-textfield__input" type="search" required id="sokeord">
-        <label class="mdl-textfield__label" for="sokeord">Sp&oslash;rreord</label>
+      <div class="mdl-dialog__actions">
+        <!-- <button type="button" class="mdl-button">Agree</button> -->
+        <button type="button" class="mdl-button close">Lukk</button>
       </div>
-      <br />
-      <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-        <input class="mdl-textfield__input" type="search" id="losning">
-        <label class="mdl-textfield__label" for="losning">L&oslash;sningsord</label>
-      </div>
-      <br />
-      <!-- Raised button with ripple -->
-      <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" onclick="addWildcard('?');"
-        type="button">
-        <i class="material-icons">crop_din</i>
-      </button>
-      <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" onclick="addWildcard('*');"
-        type="button">
-        <i class="material-icons">more_horiz</i>
-      </button>
-      <button style="font-weight:bold" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect"
-        type="submit" id="soksynonymer">
-        S&oslash;k
-      </button>
-
-    </form>
-    <br>
-    <div id="overlay">
-      <div style="top: 50%" class="mdl-spinner mdl-js-spinner is-active"></div>
+    <!--</dialog>-->
     </div>
-    <table class="mdl-data-table" id="output">
-      <!--Table for search results-->
-    </table>
+  </top-banner>
 
-  </center>
+  <form action="#" onsubmit="sokSynonym(); return false;">
+    <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+      <input class="mdl-textfield__input" type="search" required id="sokeord">
+      <label class="mdl-textfield__label" for="sokeord">Sp&#xF8;rreord</label>
+    </div>
+    <br>
+    <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+      <input class="mdl-textfield__input" type="search" id="losning">
+      <label class="mdl-textfield__label" for="losning">L&#xF8;sningsord</label>
+    </div>
+    <br>
+    <!-- Raised button with ripple -->
+    <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" onclick="addWildcard(&apos;?&apos;);" type="button">
+      <i class="material-icons">crop_din</i>
+    </button>
+    <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" onclick="addWildcard(&apos;*&apos;);" type="button">
+      <i class="material-icons">more_horiz</i>
+    </button>
+    <button style="font-weight:bold" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="submit" id="soksynonymer">
+      S&#xF8;k
+    </button>
 
+  </form>
+  <br>
+  <div id="overlay">
+    <div style="top: 50%" class="mdl-spinner mdl-js-spinner is-active"></div>
+  </div>
+  <table class="mdl-data-table" id="output">
+    <!--Table for search results-->
+  </table>
 
-  <!-- Top overlay illustrative -->
-  <header>
-    <table class="tiles" align="center">
-      <tbody>
-        <tr id="tilerow">
-          <!-- Container for crossword tiles -->
-        </tr>
-      </tbody>
-    </table>
-  </header>
-
-
-  <!-- TODO: Missing CoffeeScript 2 -->
-
-  <script type="text/javascript">//<![CDATA[
-
-
-    const API = '//kryssord.herokuapp.com/search/'
-
-    var button = $("button");
-    var sok = $("#soksynonymer");
-
-function addWildcard(wildcard) {
-      console.log("Adding wildcard...");
-      var losning = document.getElementById("losning");
-      losning.value = losning.value + wildcard;
-      parseTiles();
-      losning.focus();
-    }
-
-function sokSynonym() {
-	document.activeElement.blur();
-  var top_banner = $("top-banner");
-      top_banner.addClass("collapse-height");
-      document.getElementById("overlay").style.display = "block";
-
-      var sokeord = document.getElementById("sokeord").value.replace(/\?/g, '%3F');
-      var losning = document.getElementById("losning").value.replace(/\?/g, '%3F');
-
-      //Clear table
-      var table = document.getElementById("output");
-      while (table.firstChild) {
-    table.removeChild(table.firstChild);
-  }
-
-  path = sokeord
-      if (losning) {
-        path += "/" + losning
-      }
-      var url = API + path;
-      console.log(url);
-
-      $.ajax({
-        url: url,
-        type: 'GET',
-        dataType: 'json',
-        error: function () {
-          alert("Ukjent feil. Rar formatering av løsningsord?");
-          document.getElementById("overlay").style.display = "none";
-        },
-        success: function (data) {
-          var words = data.results;
-          words.forEach(function (element) {
-
-            var txt2 = document.createTextNode(element.length);
-            var td2 = document.createElement("td");
-        td2.appendChild(txt2);
-        td2.style.width = "10px";
-        td2.style.margin = 0;
-
-        var tr = document.createElement("tr");
-        var td = document.createElement("td");
-        var txt = document.createTextNode(element);
-        td.appendChild(txt);
-        td.className = "mdl-data-table__cell--non-numeric";
-        tr.appendChild(td2);
-        tr.appendChild(td);
-        table.appendChild(tr);
-      })
-      if (words.length == 0) {
-        footer = " Ingen treff :( ";
-      } else {
-        footer = `${words.length}/${data.nresults}`;
-      }
-      $('<tr><td></td>' +
-        ' <td href="#" class="mdl-data-table__cell--non-numeric"> ' +
-        `  <a class="plain" href="${data.uri}">` +
-        footer +
-            '  </a>' +
-            ' </td> ' +
-            '</tr>').appendTo(table);
-          document.getElementById("overlay").style.display = "none";
-        }
-      });
-    }
-
-    /* sok.on("click", function() {
-      sokSynonym();
-    }) */
-
-    $(document).ready(function () {
-      $("#show-dialog").click(function () {
-        $("#info").fadeIn();
-      });
-      $(".close").click(function () {
-        $("#info").fadeOut();
-      });
-    })
-
-/* Web app */
-let deferredPrompt;
-window.addEventListener('beforeinstallprompt', (e) => {
-  deferredPrompt = e;
-  showInstallPromotion();
-});
+</center>
 
 
-
-    /* Top overlay illustrative */
-
-    const $wildcard = $('<span class="dim">?</span>')
-    const tin = $("#losning")[0];
-    const tr = $("#tilerow")[0];
-
-    function parseTiles() {
-      var txt = tin.value.toUpperCase();
-
-      /* Deferr unnecessary wildcards */
-      txt = txt.replace('**', '*');
-      tin.value = txt;
-
-      $("#tilerow").empty();
-      for (const char of txt) {
-        td = tr.insertCell();
-
-        if (char == '*') td.className = 'indef';
-        else if (char == '?') $wildcard.clone().appendTo(td);
-        else td.innerHTML = char;
-      }
-    }
-
-    $("#losning").on('input', parseTiles);
+<!-- Top overlay illustrative -->
+<header>
+  <table class="tiles" align="center">
+    <tbody>
+      <tr id="tilerow"><!-- Container for crossword tiles --></tr>
+    </tbody>
+  </table>
+</header>
 
 
+  
 
-  //]]></script>
+  <script defer type="text/javascript" src=".js"></script>
 
-  <script>
-    // tell the embed parent frame the height of the content
-    if (window.parent && window.parent.parent) {
-      window.parent.parent.postMessage(["resultsFrame", {
-        height: document.body.getBoundingClientRect().height,
-        slug: "j9akrLv1"
-      }], "*")
-    }
-
-    // always overwrite window.name, in case users try to set it manually
-    window.name = "result"
-  </script>
+  
 </body>
-
 </html>
