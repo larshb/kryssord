@@ -1,4 +1,4 @@
-const API = 'https://kryssord.herokuapp.com/search/'
+const API = '//kryssord.herokuapp.com/search/'
 
 var button = $("button");
 var sok = $("#soksynonymer");
