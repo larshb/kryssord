@@ -1,7 +1,7 @@
 {
 	"short_name": "Kryssordbok",
 	"name": "App for kryssord.org",
-	"start_url": "/",
+	"start_url": "index.html",
 	"display": "standalone",
 	"theme_color": "#ffffff",
 	"background_color": "#ffffff",
