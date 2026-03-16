@@ -33,8 +33,11 @@ class KryssordOrg:
 
 # --- Flask -----------------------------------------------------------------------------------------
 import flask
+from flask_cors import CORS
 
 app = flask.Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}})
+
 kryssord = KryssordOrg()
 
 
