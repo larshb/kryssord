@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="no">
 
 <head>
 
@@ -27,7 +27,7 @@
 
 <body>
   <div class="centered">
-    <div id="top-banner">
+    <div id="top-banner" role="banner">
       <button id="show-dialog" style="margin: 10px; float: right;"
         class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab">
         <i class="material-icons">help</i>
@@ -60,7 +60,7 @@
     </div>
 
 
-    <form action="#" onsubmit="sokSynonym(); return false;">
+    <form role="main" action="#" onsubmit="sokSynonym(); return false;">
       <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
         <input class="mdl-textfield__input" type="search" required id="sokeord">
         <label class="mdl-textfield__label" for="sokeord">Sp&#xF8;rreord</label>
@@ -97,7 +97,7 @@
   </div>
 
   <!-- Top overlay illustrative -->
-  <header>
+  <header role="figure">
     <table class="tiles" style="margin-left:auto; margin-right:auto;">
       <tbody>
         <tr id="tilerow"><!-- Container for crossword tiles --></tr>
