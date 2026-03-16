@@ -13,7 +13,7 @@ function addWildcard(wildcard) {
 
 function sokSynonym() {
   document.activeElement.blur();
-  var top_banner = $("top-banner"); // Yes, this is a tag, not an id or class. Don't ask.
+  var top_banner = $("#top-banner");
   top_banner.addClass("collapse-height");
   document.getElementById("overlay").style.display = "block";
 
