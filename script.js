@@ -13,7 +13,7 @@ function addWildcard(wildcard) {
 
 function sokSynonym() {
   document.activeElement.blur();
-  var top_banner = $("top-banner");
+  var top_banner = $("top-banner"); // Yes, this is a tag, not an id or class. Don't ask.
   top_banner.addClass("collapse-height");
   document.getElementById("overlay").style.display = "block";
 
@@ -26,15 +26,6 @@ function sokSynonym() {
     table.removeChild(table.firstChild);
   }
 
-  // Legacy:
-  // path = sokeord
-  // if (losning) {
-  //   path += "/" + losning
-  // }
-  // var url = API + path;
-  // console.log(url);
-
-  // New API where sokeord is put into key 'a' and the optional losning is put into key 'b'
   var url = `${API}?a=${sokeord}`;
   if (losning) {
     url += `&b=${losning}`;
@@ -79,15 +70,17 @@ function sokSynonym() {
 
         table.appendChild(tr);
       })
+      let footer;
       if (words.length == 0) {
         footer = " Ingen treff :( ";
       } else {
         footer = `${words.length}`; /*/${data.nresults}`;*/
         /* TODO: Re-implement total number of results */
       }
+      const resultUrl = data.url ? data.url : "#";
       $('<tr><td></td>' +
-        ' <td href="#" class="mdl-data-table__cell--non-numeric"> ' +
-        `  <a class="plain" href="${data.url}">` +
+        ` <td class="mdl-data-table__cell--non-numeric"> ` +
+        `  <a class="plain" href="${resultUrl}">` +
         footer +
         '  </a>' +
         ' </td> ' +
@@ -124,10 +117,9 @@ function parseTiles() {
   /* Deferr unnecessary wildcards */
   txt = txt.replace('**', '*');
   tin.value = txt;
-
   $("#tilerow").empty();
   for (const char of txt) {
-    td = tr.insertCell();
+    let td = tr.insertCell();
 
     if (char == '*') td.className = 'indef';
     else if (char == '?') $wildcard.clone().appendTo(td);
@@ -135,4 +127,4 @@ function parseTiles() {
   }
 }
 
-$("#losning").on('input', parseTiles);
+$("#losning").off('input').on('input', parseTiles);
