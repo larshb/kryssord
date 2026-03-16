@@ -17,8 +17,8 @@ function sokSynonym() {
   top_banner.addClass("collapse-height");
   document.getElementById("overlay").style.display = "block";
 
-  var sokeord = document.getElementById("sokeord").value.replace(/\?/g, '%3F');
-  var losning = document.getElementById("losning").value.replace(/\?/g, '%3F');
+  var sokeordRaw = document.getElementById("sokeord").value;
+  var losningRaw = document.getElementById("losning").value;
 
   //Clear table
   var table = document.getElementById("output");
@@ -26,9 +26,16 @@ function sokSynonym() {
     table.removeChild(table.firstChild);
   }
 
-  var url = `${API}?a=${sokeord}`;
-  if (losning) {
-    url += `&b=${losning}`;
+  var url = API;
+  let params = [];
+  if (sokeordRaw) {
+    params.push(`a=${encodeURIComponent(sokeordRaw)}`);
+  }
+  if (losningRaw) {
+    params.push(`b=${encodeURIComponent(losningRaw)}`);
+  }
+  if (params.length > 0) {
+    url += "?" + params.join("&");
   }
   console.log(url);
 
@@ -44,12 +51,13 @@ function sokSynonym() {
       var words = data.results;
       words.forEach(function (element) {
 
+        // Columns: word length, word
+        // Header row omitted for brevity
+
         var txt2 = document.createTextNode(element.word.length);
         var td2 = document.createElement("td");
         td2.appendChild(txt2);
-        td2.style.width = "10px";
-        td2.style.margin = 0;
-
+        td2.classList.add("no-margin", "word-length-cell");
         var tr = document.createElement("tr");
         var td = document.createElement("td");
         var txt = document.createTextNode(element.word);
@@ -74,8 +82,8 @@ function sokSynonym() {
       if (words.length == 0) {
         footer = " Ingen treff :( ";
       } else {
-        footer = `${words.length}`; /*/${data.nresults}`;*/
-        /* TODO: Re-implement total number of results */
+        footer = `${words.length}`;
+        // TODO: Re-implement total number of results reported by kryssord.org
       }
       const resultUrl = data.url ? data.url : "#";
       $('<tr><td></td>' +
@@ -109,22 +117,48 @@ $(document).ready(function () {
 /* Top overlay illustrative */
 const $wildcard = $('<span class="dim">?</span>')
 const tin = $("#losning")[0];
-const tr = $("#tilerow")[0];
+const tilerowElem = $("#tilerow")[0];
 
 function parseTiles() {
   var txt = tin.value.toUpperCase();
 
-  /* Deferr unnecessary wildcards */
-  txt = txt.replace('**', '*');
-  tin.value = txt;
-  $("#tilerow").empty();
-  for (const char of txt) {
-    let td = tr.insertCell();
+  // Remove redundant asterisks
+  // Asterisks mean any number of characters
+  txt = txt.replace(/\*{2,}/g, '*');
 
-    if (char == '*') td.className = 'indef';
-    else if (char == '?') $wildcard.clone().appendTo(td);
-    else td.innerHTML = char;
+  // Preserve cursor position to avoid jumps
+  const start = tin.selectionStart;
+  const end = tin.selectionEnd;
+  tin.value = txt;
+  tin.setSelectionRange(start, end);
+
+  // Remove all cells from tilerow to prevent memory leaks
+  while (tilerowElem.firstChild) {
+    tilerowElem.removeChild(tilerowElem.firstChild);
+  }
+
+  // Ensure tilerowElem is a <tr> element before using insertCell()
+  if (tilerowElem && tilerowElem.tagName === 'TR') {
+    for (const char of txt) {
+      let td = tilerowElem.insertCell();
+
+      if (char == '*') td.className = 'indef';
+      else if (char == '?') $wildcard.clone().appendTo(td);
+      else td.innerHTML = char;
+    }
+  } else {
+    // Fallback: create td elements and append them manually
+    for (const char of txt) {
+      let td = document.createElement('td');
+
+      if (char == '*') td.className = 'indef';
+      else if (char == '?') $wildcard.clone().appendTo(td);
+      else td.innerHTML = char;
+
+      tilerowElem.appendChild(td);
+    }
   }
 }
 
+// Putting this into document.ready breaks its ability to run on updated input for some reason
 $("#losning").off('input').on('input', parseTiles);
