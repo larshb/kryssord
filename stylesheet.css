@@ -1,10 +1,10 @@
 .mdl-dialog#info {
-    display: none;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    -webkit-transform: translate(-50%, -50%);
-    transform: translate(-50%, -50%);
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  -webkit-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
 }
 
 a.plain {
@@ -14,7 +14,7 @@ a.plain {
 }
 
 button.plain {
-  border: 0px;  
+  border: 0px;
 }
 
 td {
@@ -90,7 +90,7 @@ header {
   color: #ddd;
 }
 
-#tilerow > td {
+#tilerow>td {
   background: white;
   text-align: center;
   line-height: 12px;
@@ -99,5 +99,3 @@ header {
   border: 1px solid;
   padding: 0px;
 }
-
-  
