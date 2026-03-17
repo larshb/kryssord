@@ -1,17 +1,17 @@
 const API = "https://kryssord.onrender.com/search";
 
-var button = $("button");
-var sok = $("#soksynonymer");
+var searchButton = $("button");
+var synonymSearchInput = $("#soksynonymer");
 
 function addWildcard(wildcard) {
   console.log("Adding wildcard...");
-  var losning = document.getElementById("losning");
-  losning.value = losning.value + wildcard;
+  var solutionInput = document.getElementById("losning");
+  solutionInput.value = solutionInput.value + wildcard;
   parseTiles();
-  losning.focus();
+  solutionInput.focus();
 }
 
-function sokSynonym() {
+function searchSynonyms() {
   // Remove focus from the current element
   document.activeElement.blur();
 
@@ -20,15 +20,15 @@ function sokSynonym() {
   $("#overlay").show();
 
   // Get the search terms from the input fields
-  var sokeordRaw = $("#sokeord").val();
-  var losningRaw = $("#losning").val();
+  var searchText = $("#sokeord").val();
+  var solutionText = $("#losning").val();
 
   // Clear the output table
   $("#output tr").remove();
 
   // Build the API URL with the search parameters
   const url = new URL(API);
-  const params = new URLSearchParams({ a: sokeordRaw, b: losningRaw });
+  const params = new URLSearchParams({ a: searchText, b: solutionText });
   url.search = params.toString();
 
   // Make the API request
@@ -52,7 +52,7 @@ function sokSynonym() {
         tr.on("click", function () {
           $("#sokeord").val(element.word);
           $("#losning").val("");
-          sokSynonym();
+          searchSynonyms();
         });
 
         tr.css("cursor", "pointer");
@@ -102,31 +102,31 @@ $(document).ready(function () {
 
 /* Top overlay illustrative */
 const $wildcard = $('<span class="dim">?</span>');
-const tin = $("#losning")[0];
-const tilerowElem = $("#tilerow")[0];
+const solutionInputElem = $("#losning")[0];
+const tileRowElem = $("#tilerow")[0];
 
 function parseTiles() {
-  var txt = tin.value.toUpperCase();
+  var txt = solutionInputElem.value.toUpperCase();
 
   // Remove redundant asterisks
   // Asterisks mean any number of characters
   txt = txt.replace(/\*{2,}/g, "*");
 
   // Preserve cursor position to avoid jumps
-  const start = tin.selectionStart;
-  const end = tin.selectionEnd;
-  tin.value = txt;
-  tin.setSelectionRange(start, end);
+  const start = solutionInputElem.selectionStart;
+  const end = solutionInputElem.selectionEnd;
+  solutionInputElem.value = txt;
+  solutionInputElem.setSelectionRange(start, end);
 
   // Remove all cells from tilerow to prevent memory leaks
-  while (tilerowElem.firstChild) {
-    tilerowElem.removeChild(tilerowElem.firstChild);
+  while (tileRowElem.firstChild) {
+    tileRowElem.removeChild(tileRowElem.firstChild);
   }
 
-  // Ensure tilerowElem is a <tr> element before using insertCell()
-  if (tilerowElem && tilerowElem.tagName === "TR") {
+  // Ensure tileRowElem is a <tr> element before using insertCell()
+  if (tileRowElem && tileRowElem.tagName === "TR") {
     for (const char of txt) {
-      let td = tilerowElem.insertCell();
+      let td = tileRowElem.insertCell();
 
       if (char == "*") td.className = "indef";
       else if (char == "?") $wildcard.clone().appendTo(td);
@@ -141,7 +141,7 @@ function parseTiles() {
       else if (char == "?") $wildcard.clone().appendTo(td);
       else td.innerHTML = char;
 
-      tilerowElem.appendChild(td);
+      tileRowElem.appendChild(td);
     }
   }
 }
