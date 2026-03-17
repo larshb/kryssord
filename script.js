@@ -27,18 +27,9 @@ function sokSynonym() {
   $("#output tr").remove();
 
   // Build the API URL with the search parameters
-  var url = API;
-  if (sokeordRaw) {
-    url += `?a=${encodeURIComponent(sokeordRaw)}`;
-  }
-  if (losningRaw) {
-    if (url.includes("?")) {
-      url += "&";
-    } else {
-      url += "?";
-    }
-    url += `b=${encodeURIComponent(losningRaw)}`;
-  }
+  const url = new URL(API);
+  const params = new URLSearchParams({ a: sokeordRaw, b: losningRaw });
+  url.search = params.toString();
 
   // Make the API request
   fetch(url)
