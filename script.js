@@ -12,88 +12,72 @@ function addWildcard(wildcard) {
 }
 
 function sokSynonym() {
+  // Remove focus from the current element
   document.activeElement.blur();
-  var top_banner = $("#top-banner");
-  top_banner.addClass("collapse-height");
-  document.getElementById("overlay").style.display = "block";
 
-  var sokeordRaw = document.getElementById("sokeord").value;
-  var losningRaw = document.getElementById("losning").value;
+  // Collapse the top banner and show the overlay
+  $("#top-banner").addClass("collapse-height");
+  $("#overlay").show();
 
-  //Clear table
-  var table = document.getElementById("output");
-  while (table.firstChild) {
-    table.removeChild(table.firstChild);
-  }
+  // Get the search terms from the input fields
+  var sokeordRaw = $("#sokeord").val();
+  var losningRaw = $("#losning").val();
 
+  // Clear the output table
+  $("#output tr").remove();
+
+  // Build the API URL with the search parameters
   var url = API;
-  let params = [];
   if (sokeordRaw) {
-    params.push(`a=${encodeURIComponent(sokeordRaw)}`);
+    url += `?a=${encodeURIComponent(sokeordRaw)}`;
   }
   if (losningRaw) {
-    params.push(`b=${encodeURIComponent(losningRaw)}`);
+    if (url.includes('?')) {
+      url += '&';
+    } else {
+      url += '?';
+    }
+    url += `b=${encodeURIComponent(losningRaw)}`;
   }
-  if (params.length > 0) {
-    url += "?" + params.join("&");
-  }
-  console.log(url);
 
+  // Make the API request
   $.ajax({
     url: url,
     type: 'GET',
     dataType: 'json',
     error: function () {
       alert("Ukjent feil. Rar formatering av løsningsord?");
-      document.getElementById("overlay").style.display = "none";
+      $("#overlay").hide();
     },
     success: function (data) {
-      var words = data.results;
-      words.forEach(function (element) {
+      // Add the search results to the output table
+      data.results.forEach(function (element) {
+        var tr = $('<tr>')
+          .append($('<td class="no-margin word-length-cell">').text(element.word.length))
+          .append($('<td class="mdl-data-table__cell--non-numeric">').text(element.word));
 
-        // Columns: word length, word
-        // Header row omitted for brevity
-
-        var txt2 = document.createTextNode(element.word.length);
-        var td2 = document.createElement("td");
-        td2.appendChild(txt2);
-        td2.classList.add("no-margin", "word-length-cell");
-        var tr = document.createElement("tr");
-        var td = document.createElement("td");
-        var txt = document.createTextNode(element.word);
-        td.appendChild(txt);
-        td.className = "mdl-data-table__cell--non-numeric";
-        tr.appendChild(td2);
-        tr.appendChild(td);
-
-        /* When the row is clicked, replace 'sokeord' with the word in the row and re-search */
-        tr.onclick = function () {
-          document.getElementById("sokeord").value = element.word;
-          document.getElementById("losning").value = "";
+        tr.on('click', function () {
+          $("#sokeord").val(element.word);
+          $("#losning").val("");
           sokSynonym();
-        }
+        });
 
-        /* Use pointer cursor to indicate that the row is clickable */
-        tr.style.cursor = "pointer";
+        tr.css("cursor", "pointer");
 
-        table.appendChild(tr);
-      })
-      let footer;
-      if (words.length == 0) {
-        footer = " Ingen treff :( ";
-      } else {
-        footer = `${words.length}`;
-        // TODO: Re-implement total number of results reported by kryssord.org
-      }
-      const resultUrl = data.url ? data.url : "#";
+        $("#output").append(tr);
+      });
+
+      // Add the footer to the output table
+      var footer = data.results.length === 0 ? " Ingen treff :( " : `${data.results.length}`;
+      var resultUrl = data.url || "#";
       $('<tr><td></td>' +
         ` <td class="mdl-data-table__cell--non-numeric"> ` +
-        `  <a class="plain" href="${resultUrl}">` +
-        footer +
-        '  </a>' +
+        `  <a class="plain" href="${resultUrl}">${footer}</a>` +
         ' </td> ' +
-        '</tr>').appendTo(table);
-      document.getElementById("overlay").style.display = "none";
+        '</tr>').appendTo("#output");
+
+      // Hide the overlay
+      $("#overlay").hide();
     }
   });
 }
