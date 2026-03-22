@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kryssordløser</title>
+  <style>
+    /* ------------------------------------------------------------------ */
+    /* Reset & base                                                         */
+    /* ------------------------------------------------------------------ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cell-size: 36px;
+      --cell-border: #999;
+      --black-cell: #222;
+      --bg: #f5f4f0;
+      --sidebar-bg: #fff;
+      --toolbar-bg: #1a1a2e;
+      --toolbar-fg: #e8e8e8;
+      --accent: #4a7c59;
+      --accent-hover: #3a6147;
+      --cursor: #ffd166;
+      --word-hl: #d4edda;
+      --conflict: #f8d7da;
+      --candidate: #fff3b0;
+      --result-hover: #eaf4ee;
+      --border-radius: 4px;
+      --font-mono: 'Courier New', Courier, monospace;
+      --font-ui: system-ui, sans-serif;
+    }
+
+    body {
+      font-family: var(--font-ui);
+      background: var(--bg);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Toolbar                                                              */
+    /* ------------------------------------------------------------------ */
+    #toolbar {
+      background: var(--toolbar-bg);
+      color: var(--toolbar-fg);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      flex-shrink: 0;
+    }
+
+    #toolbar h1 {
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      margin-right: 4px;
+      white-space: nowrap;
+    }
+
+    .toolbar-sep {
+      width: 1px;
+      height: 20px;
+      background: #444;
+      margin: 0 4px;
+    }
+
+    #grid-size-form {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    #grid-size-form input[type="number"] {
+      width: 44px;
+      padding: 3px 5px;
+      border: 1px solid #555;
+      border-radius: var(--border-radius);
+      background: #2a2a3e;
+      color: var(--toolbar-fg);
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    #grid-size-form span { font-size: 0.9rem; }
+
+    .btn {
+      padding: 4px 10px;
+      border: none;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-family: var(--font-ui);
+      white-space: nowrap;
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--toolbar-fg);
+      border: 1px solid #555;
+    }
+    .btn-ghost:hover { background: #2a2a3e; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-solve {
+      background: #e8a838;
+      color: #1a1a1a;
+      font-weight: 600;
+      margin-left: auto;
+    }
+    .btn-solve:hover { background: #d4962a; }
+
+    /* ------------------------------------------------------------------ */
+    /* Main layout                                                          */
+    /* ------------------------------------------------------------------ */
+    #main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Grid area                                                            */
+    /* ------------------------------------------------------------------ */
+    #grid-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      overflow: auto;
+    }
+
+    #grid {
+      border-collapse: collapse;
+      border: 2px solid var(--black-cell);
+      outline: none;
+      user-select: none;
+    }
+
+    #grid td {
+      width: var(--cell-size);
+      height: var(--cell-size);
+      border: 1px solid var(--cell-border);
+      position: relative;
+      text-align: center;
+      vertical-align: middle;
+      cursor: pointer;
+      background: #fff;
+      padding: 0;
+    }
+
+    #grid td .letter {
+      font-family: var(--font-mono);
+      font-size: 1.1rem;
+      font-weight: bold;
+      line-height: 1;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    #grid td .num {
+      position: absolute;
+      top: 1px;
+      left: 2px;
+      font-size: 0.5rem;
+      line-height: 1;
+      color: #555;
+      pointer-events: none;
+    }
+
+    /* Cell states */
+    #grid td.black    { background: var(--black-cell); cursor: default; }
+    #grid td.word-hl  { background: var(--word-hl); }
+    #grid td.cursor   { background: var(--cursor); }
+    #grid td.conflict { background: var(--conflict); }
+    #grid td.candidate{ background: var(--candidate); }
+
+    /* ------------------------------------------------------------------ */
+    /* Sidebar                                                              */
+    /* ------------------------------------------------------------------ */
+    #sidebar {
+      width: 280px;
+      flex-shrink: 0;
+      background: var(--sidebar-bg);
+      border-left: 1px solid #ddd;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #sidebar-inner {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px 14px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    #word-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    #word-label span { color: var(--accent); font-size: 0.95rem; }
+
+    .field-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    #clue-input {
+      width: 100%;
+      padding: 7px 8px;
+      border: 1px solid #ccc;
+      border-radius: var(--border-radius);
+      font-size: 0.95rem;
+      font-family: var(--font-ui);
+      outline: none;
+    }
+    #clue-input:focus { border-color: var(--accent); }
+
+    #pattern-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+    }
+
+    .pat-box {
+      width: 26px;
+      height: 28px;
+      border: 1px solid #bbb;
+      border-radius: 3px;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      padding: 0;
+      background: #fafafa;
+      outline: none;
+      caret-color: var(--accent);
+    }
+    .pat-box:focus  { border-color: var(--accent); background: #fff; }
+    .pat-box.filled { background: #fff; color: #222; }
+    .pat-box.empty  { color: #bbb; }
+
+    #search-btn {
+      width: 100%;
+      padding: 8px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--border-radius);
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    #search-btn:hover:not(:disabled) { background: var(--accent-hover); }
+    #search-btn:disabled { background: #ccc; cursor: default; }
+
+    .spinner {
+      display: none;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinning { display: inline-block !important; }
+
+    #cache-badge {
+      font-size: 0.7rem;
+      color: #888;
+      text-align: right;
+      min-height: 14px;
+    }
+
+    #results-header {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-top: 1px solid #eee;
+      padding-top: 10px;
+    }
+
+    #results-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    #results-list li {
+      padding: 6px 8px;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      font-size: 0.9rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #results-list li:hover,
+    #results-list li.focused { background: var(--result-hover); }
+
+    #results-list li .word-text {
+      font-family: var(--font-mono);
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    #results-list li .word-len { font-size: 0.75rem; color: #999; }
+
+    /* ------------------------------------------------------------------ */
+    /* Notification banner (Løs alle)                                       */
+    /* ------------------------------------------------------------------ */
+    #banner {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      padding: 10px 16px;
+      font-size: 0.88rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 100;
+      white-space: nowrap;
+    }
+    #banner.hidden { display: none; }
+
+    /* ------------------------------------------------------------------ */
+    /* Settings panel                                                       */
+    /* ------------------------------------------------------------------ */
+    #settings-panel {
+      border-top: 1px solid #eee;
+      padding: 8px 14px 12px;
+      flex-shrink: 0;
+    }
+
+    #settings-toggle {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 0.78rem;
+      color: #888;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    #settings-toggle:hover { color: #444; }
+
+    #settings-body {
+      display: none;   /* toggled by JS */
+      margin-top: 8px;
+      flex-direction: column;
+      gap: 6px;
+    }
+    #settings-body.open { display: flex; }
+
+    #clear-cache-btn {
+      width: 100%;
+      padding: 5px 8px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: var(--border-radius);
+      font-size: 0.8rem;
+      cursor: pointer;
+      color: #555;
+      font-family: var(--font-ui);
+    }
+    #clear-cache-btn:hover { background: #fef3f3; border-color: #f5c6cb; color: #c00; }
+
+    #cache-stats { font-size: 0.75rem; color: #aaa; }
+  </style>
+</head>
+<body>
+
+<!-- -------------------------------------------------------------------- -->
+<!-- Toolbar                                                                -->
+<!-- -------------------------------------------------------------------- -->
+<div id="toolbar">
+  <h1>Kryssordløser</h1>
+  <div class="toolbar-sep"></div>
+
+  <form id="grid-size-form" onsubmit="return false">
+    <input type="number" id="input-cols" value="13" min="2" max="30" title="Kolonner (bredde)">
+    <span>×</span>
+    <input type="number" id="input-rows" value="13" min="2" max="30" title="Rader (høyde)">
+    <button class="btn btn-ghost" id="new-grid-btn" type="button">Nytt brett</button>
+  </form>
+
+  <div class="toolbar-sep"></div>
+  <button class="btn btn-ghost" id="open-btn" type="button">Åpne</button>
+  <button class="btn btn-ghost" id="save-btn" type="button">Lagre</button>
+
+  <button class="btn btn-solve" id="solve-all-btn" type="button">🤖 Løs alle</button>
+</div>
+
+<!-- -------------------------------------------------------------------- -->
+<!-- Main                                                                   -->
+<!-- -------------------------------------------------------------------- -->
+<div id="main">
+
+  <!-- Grid -->
+  <div id="grid-area">
+    <table id="grid" tabindex="0">
+      <tbody id="grid-body">
+        <!--
+          Static sample grid for Step 2 layout verification.
+          grid.js (Step 3) will clear and regenerate this entirely.
+
+          Legend: .black = blocked cell, .word-hl = highlighted word,
+                  .cursor = active cell, .conflict = letter conflict sample
+        -->
+        <tr>
+          <td><span class="num">1</span><span class="letter"></span></td>
+          <td><span class="letter"></span></td>
+          <td class="black"></td>
+          <td><span class="num">2</span><span class="letter"></span></td>
+          <td><span class="letter"></span></td>
+        </tr>
+        <tr>
+          <td class="word-hl"><span class="letter">K</span></td>
+          <td class="word-hl cursor"><span class="letter">R</span></td>
+          <td class="word-hl"><span class="letter"></span></td>
+          <td class="word-hl"><span class="letter"></span></td>
+          <td class="word-hl"><span class="letter"></span></td>
+        </tr>
+        <tr>
+          <td><span class="letter"></span></td>
+          <td><span class="letter"></span></td>
+          <td class="black"></td>
+          <td><span class="letter"></span></td>
+          <td><span class="letter"></span></td>
+        </tr>
+        <tr>
+          <td class="black"></td>
+          <td><span class="num">3</span><span class="letter"></span></td>
+          <td><span class="letter">Ø</span></td>
+          <td><span class="letter">L</span></td>
+          <td class="black"></td>
+        </tr>
+        <tr>
+          <td><span class="letter"></span></td>
+          <td><span class="letter"></span></td>
+          <td class="conflict"><span class="letter">A</span></td>
+          <td><span class="letter"></span></td>
+          <td><span class="letter"></span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <div id="sidebar-inner">
+
+      <div id="word-label">Aktivt ord: <span id="word-id">1 →</span></div>
+
+      <!-- Clue -->
+      <div>
+        <div class="field-label">Ledetekst</div>
+        <input id="clue-input" type="text"
+               placeholder="Ledetekst (eller mønster)"
+               autocomplete="off" spellcheck="false">
+      </div>
+
+      <!-- Pattern -->
+      <div>
+        <div class="field-label">Mønster</div>
+        <div id="pattern-row">
+          <!-- Populated by grid.js. Static sample for Step 2: -->
+          <input class="pat-box filled" maxlength="1" value="K">
+          <input class="pat-box filled" maxlength="1" value="R">
+          <input class="pat-box empty"  maxlength="1" placeholder="_">
+          <input class="pat-box empty"  maxlength="1" placeholder="_">
+          <input class="pat-box empty"  maxlength="1" placeholder="_">
+        </div>
+      </div>
+
+      <!-- Search -->
+      <button id="search-btn" type="button" disabled>
+        <span class="spinner" id="spinner"></span>
+        🔍 Søk
+      </button>
+      <div id="cache-badge"></div>
+
+      <!-- Results -->
+      <div id="results-header">Resultater</div>
+      <ul id="results-list">
+        <!-- Populated by search.js. Static sample for Step 2: -->
+        <li class="focused">
+          <span class="word-text">kryssord</span>
+          <span class="word-len">8</span>
+        </li>
+        <li>
+          <span class="word-text">kringkord</span>
+          <span class="word-len">9</span>
+        </li>
+        <li>
+          <span class="word-text">kruttord</span>
+          <span class="word-len">8</span>
+        </li>
+      </ul>
+
+    </div><!-- /sidebar-inner -->
+
+    <!-- Settings -->
+    <div id="settings-panel">
+      <button id="settings-toggle" type="button">⚙ Innstillinger</button>
+      <div id="settings-body">
+        <button id="clear-cache-btn" type="button">🗑 Tøm hurtigbuffer</button>
+        <div id="cache-stats"></div>
+      </div>
+    </div>
+  </div><!-- /sidebar -->
+
+</div><!-- /main -->
+
+<!-- Løs alle banner -->
+<div id="banner" class="hidden">
+  <span id="banner-text"></span>
+  <button class="btn btn-primary" id="banner-accept">✓ Godta</button>
+  <button class="btn btn-ghost"   id="banner-discard">✗ Forkast</button>
+</div>
+
+<!--
+  JS modules — uncommented as each step is implemented:
+  <script src="/static/grid.js"   type="module"></script>
+  <script src="/static/search.js" type="module"></script>
+  <script src="/static/solver.js" type="module"></script>
+-->
+
+<!-- Minimal bootstrap for settings toggle (no module needed) -->
+<script>
+  document.getElementById('settings-toggle').addEventListener('click', () => {
+    document.getElementById('settings-body').classList.toggle('open');
+  });
+</script>
+
+</body>
+</html>
