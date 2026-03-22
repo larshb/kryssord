@@ -155,26 +155,18 @@
   async function _doSearch() {
     if (searchBtn.disabled) return;
 
-    let a = clueInput.value.trim();
-    let b = _patternString();
-
-    // b → a promotion: if clue empty but pattern present, search by pattern
-    if (!a && b) { a = b; b = ""; }
-    if (!a) return;
-
-    const params = new URLSearchParams({ a });
-    if (b) params.set("b", b);
+    const clue    = clueInput.value.trim();
+    const pattern = _patternString();
+    if (!clue && !pattern) return;
 
     _setLoading(true);
     _clearResults();
 
     try {
-      const res  = await fetch(`/api/lookup?${params}`);
-      const data = await res.json();
-      if (!res.ok) { _showError(data.detail || data.error || "Ukjent feil"); return; }
+      const data = await window.api.lookup(clue, pattern);
       _renderResults(data.words, data.cached);
-    } catch (_) {
-      _showError("Kunne ikke nå serveren");
+    } catch (err) {
+      _showError(err.message || "Kunne ikke nå serveren");
     } finally {
       _setLoading(false);
     }

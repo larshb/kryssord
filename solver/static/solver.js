@@ -107,10 +107,7 @@
 
       let data;
       try {
-        const params = new URLSearchParams({ a: clue, b: pattern });
-        const res = await fetch(`/api/lookup?${params}`);
-        if (!res.ok) { skipped++; continue; }
-        data = await res.json();
+        data = await window.api.lookup(clue, pattern);
       } catch (_) { skipped++; continue; }
 
       if (data.words.length !== 1) { skipped++; continue; }
