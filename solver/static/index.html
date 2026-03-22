@@ -427,48 +427,6 @@
   <div id="grid-area">
     <table id="grid" tabindex="0">
       <tbody id="grid-body">
-        <!--
-          Static sample grid for Step 2 layout verification.
-          grid.js (Step 3) will clear and regenerate this entirely.
-
-          Legend: .black = blocked cell, .word-hl = highlighted word,
-                  .cursor = active cell, .conflict = letter conflict sample
-        -->
-        <tr>
-          <td><span class="num">1</span><span class="letter"></span></td>
-          <td><span class="letter"></span></td>
-          <td class="black"></td>
-          <td><span class="num">2</span><span class="letter"></span></td>
-          <td><span class="letter"></span></td>
-        </tr>
-        <tr>
-          <td class="word-hl"><span class="letter">K</span></td>
-          <td class="word-hl cursor"><span class="letter">R</span></td>
-          <td class="word-hl"><span class="letter"></span></td>
-          <td class="word-hl"><span class="letter"></span></td>
-          <td class="word-hl"><span class="letter"></span></td>
-        </tr>
-        <tr>
-          <td><span class="letter"></span></td>
-          <td><span class="letter"></span></td>
-          <td class="black"></td>
-          <td><span class="letter"></span></td>
-          <td><span class="letter"></span></td>
-        </tr>
-        <tr>
-          <td class="black"></td>
-          <td><span class="num">3</span><span class="letter"></span></td>
-          <td><span class="letter">Ø</span></td>
-          <td><span class="letter">L</span></td>
-          <td class="black"></td>
-        </tr>
-        <tr>
-          <td><span class="letter"></span></td>
-          <td><span class="letter"></span></td>
-          <td class="conflict"><span class="letter">A</span></td>
-          <td><span class="letter"></span></td>
-          <td><span class="letter"></span></td>
-        </tr>
       </tbody>
     </table>
   </div>
@@ -546,12 +504,9 @@
   <button class="btn btn-ghost"   id="banner-discard">✗ Forkast</button>
 </div>
 
-<!--
-  JS modules — uncommented as each step is implemented:
-  <script src="/static/grid.js"   type="module"></script>
-  <script src="/static/search.js" type="module"></script>
-  <script src="/static/solver.js" type="module"></script>
--->
+<script src="/static/grid.js"></script>
+<!-- <script src="/static/search.js" type="module"></script> -->
+<!-- <script src="/static/solver.js" type="module"></script> -->
 
 <!-- Minimal bootstrap for settings toggle (no module needed) -->
 <script>
