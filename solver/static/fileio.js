@@ -128,6 +128,10 @@
     // Rebuild cells
     g._buildCells(height, width);
 
+    // Sync toolbar inputs to loaded dimensions
+    document.getElementById("input-cols").value = width;
+    document.getElementById("input-rows").value = height;
+
     for (let r = 0; r < height; r++) {
       for (let c = 0; c < width; c++) {
         const pCell = data.puzzle[r]?.[c];
