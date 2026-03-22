@@ -84,6 +84,16 @@
       text-align: center;
     }
 
+    /* Hide spinner arrows on grid size inputs */
+    #grid-size-form input[type="number"] {
+      -moz-appearance: textfield;
+    }
+    #grid-size-form input[type="number"]::-webkit-outer-spin-button,
+    #grid-size-form input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
     #grid-size-form span { font-size: 0.9rem; }
 
     .btn {
