@@ -451,6 +451,20 @@ class Grid {
   }
 
   // -------------------------------------------------------------------------
+  // Clear letters
+  // -------------------------------------------------------------------------
+  clearLetters() {
+    this._saveUndo();
+    for (let r = 0; r < this.rows; r++)
+        for (let c = 0; c < this.cols; c++)
+        this.cells[r][c].letter = "";
+    this._renderAll();
+    this._renderHighlights();
+    this._fireCellChange();
+    this._autosave();
+    }
+
+  // -------------------------------------------------------------------------
   // Keyboard handling
   // -------------------------------------------------------------------------
 
@@ -593,6 +607,9 @@ class Grid {
       const cols = parseInt(document.getElementById("input-cols").value, 10) || 13;
       const rows = parseInt(document.getElementById("input-rows").value, 10) || 13;
       this.newGrid(rows, cols);
+    });
+    document.getElementById("clear-letters-btn").addEventListener("click", () => {
+      if (confirm("Tøm alle bokstaver? Layout og ledetekster beholdes.")) this.clearLetters();
     });
   }
 
