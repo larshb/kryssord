@@ -459,12 +459,6 @@
       <div>
         <div class="field-label">Mønster</div>
         <div id="pattern-row">
-          <!-- Populated by grid.js. Static sample for Step 2: -->
-          <input class="pat-box filled" maxlength="1" value="K">
-          <input class="pat-box filled" maxlength="1" value="R">
-          <input class="pat-box empty"  maxlength="1" placeholder="_">
-          <input class="pat-box empty"  maxlength="1" placeholder="_">
-          <input class="pat-box empty"  maxlength="1" placeholder="_">
         </div>
       </div>
 
@@ -477,21 +471,7 @@
 
       <!-- Results -->
       <div id="results-header">Resultater</div>
-      <ul id="results-list">
-        <!-- Populated by search.js. Static sample for Step 2: -->
-        <li class="focused">
-          <span class="word-text">kryssord</span>
-          <span class="word-len">8</span>
-        </li>
-        <li>
-          <span class="word-text">kringkord</span>
-          <span class="word-len">9</span>
-        </li>
-        <li>
-          <span class="word-text">kruttord</span>
-          <span class="word-len">8</span>
-        </li>
-      </ul>
+      <ul id="results-list"></ul>
 
     </div><!-- /sidebar-inner -->
 
@@ -515,7 +495,7 @@
 </div>
 
 <script src="/static/grid.js"></script>
-<!-- <script src="/static/search.js" type="module"></script> -->
+<script src="/static/search.js"></script>
 <!-- <script src="/static/solver.js" type="module"></script> -->
 
 <!-- Minimal bootstrap for settings toggle (no module needed) -->
