@@ -15,7 +15,7 @@ class KryssordOrg:
     def _parse_html(
         self,
         html: bytes,
-        word_regex: str = r'<td class="word"><a href="(.*?)">(.*?)<\/a><\/td>',
+        word_regex: str = r"<td class=\"word\">\s*?<a href=\"(.*?)\">\s*?([^\s]+.*?)\s*?<\/a>\s*?<\/td>",
         total_regex: str = r"Fant <strong>(\d+)</strong>",
     ) -> tuple[list[dict], int]:
         text = html.decode("utf-8")

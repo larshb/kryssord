@@ -14,7 +14,7 @@ class KryssordOrg:
     def _parse_html(
         self,
         html: bytes,
-        word_regex=r"<td class=\"word\"><a href=\"(.*?)\">(.*?)<\/a><\/td>",
+        word_regex=r"<td class=\"word\">\s*?<a href=\"(.*?)\">\s*?([^\s]+.*?)\s*?<\/a>\s*?<\/td>",
     ):
         text = html.decode("utf-8")
         for match in re.findall(word_regex, text):
