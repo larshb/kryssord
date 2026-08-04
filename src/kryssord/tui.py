@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import requests
+from rich.markup import escape
 from textual import work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -19,27 +20,35 @@ RESULT_COLUMNS = ("Ord", "Ant. ord", "Lengde", "Bruker", "Sist sett")
 # fetched for one word so a pathological case can't spam the site.
 MAX_NAOB_ENTRIES = 5
 
+# naob.no's own accent color for section headings (ETYMOLOGI, UTTRYKK, ...),
+# reused here for our equivalent labels.
+NAOB_RED = "#a54242"
+
 
 def _format_naob_entry(entry: NaobEntry) -> str:
-    header = f"[bold]{entry.word}[/bold] ({entry.word_class})" if entry.word_class else f"[bold]{entry.word}[/bold]"
+    word = escape(entry.word)
+    header = f"[bold]{word}[/bold] ({escape(entry.word_class)})" if entry.word_class else f"[bold]{word}[/bold]"
     lines = [header]
     if entry.inflection:
-        lines.append(entry.inflection)
+        lines.append(escape(entry.inflection))
     if entry.etymology:
-        lines.append(f"Opphav: {entry.etymology}")
+        lines.append(f"[bold {NAOB_RED}]Opphav:[/] {escape(entry.etymology)}")
 
     lines.append("")
     for s in entry.senses:
-        lines.append(f"{s.number}  {s.text}")
+        lines.append(f"[bold]{escape(s.number)}[/]  {escape(s.text)}")
         for example in s.examples:
-            lines.append(f"    eks: {example}")
+            lines.append(f"    [italic]eks: {escape(example)}[/]")
 
     if entry.idiom_count:
-        idiom_bits = [f"{i.phrase} — {i.meaning}" if i.meaning else i.phrase for i in entry.idioms]
+        idiom_bits = []
+        for i in entry.idioms:
+            phrase = f"[bold]{escape(i.phrase)}[/]"
+            idiom_bits.append(f"{phrase} — {escape(i.meaning)}" if i.meaning else phrase)
         remaining = entry.idiom_count - len(entry.idioms)
         suffix = f" (+{remaining} flere uttrykk)" if remaining > 0 else ""
         lines.append("")
-        lines.append("Uttrykk: " + "; ".join(idiom_bits) + suffix)
+        lines.append(f"[bold {NAOB_RED}]Uttrykk:[/] " + "; ".join(idiom_bits) + suffix)
 
     return "\n".join(lines)
 

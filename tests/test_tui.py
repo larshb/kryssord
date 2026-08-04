@@ -197,11 +197,11 @@ def test_format_naob_entry_includes_word_class_inflection_and_senses():
     )
     text = _format_naob_entry(entry)
 
-    assert "hund" in text
+    assert "[bold]hund[/bold]" in text
     assert "substantiv" in text
     assert "en; hunden, hunder" in text
-    assert "1  temmet rovdyr" in text
-    assert "1.1  overført, om person" in text
+    assert "[bold]1[/]  temmet rovdyr" in text
+    assert "[bold]1.1[/]  overført, om person" in text
 
 
 def test_format_naob_entry_includes_etymology_examples_and_idioms():
@@ -219,9 +219,9 @@ def test_format_naob_entry_includes_etymology_examples_and_idioms():
     )
     text = _format_naob_entry(entry)
 
-    assert "Opphav: av gammeldansk jūl" in text
-    assert "eks: komme hjem til jul" in text
-    assert "hvit jul — juletid med snø" in text
+    assert "[bold #a54242]Opphav:[/] av gammeldansk jūl" in text
+    assert "[italic]eks: komme hjem til jul[/]" in text
+    assert "[bold]hvit jul[/] — juletid med snø" in text
     assert "+7 flere uttrykk" in text
 
 
