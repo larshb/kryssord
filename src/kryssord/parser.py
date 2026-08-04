@@ -8,7 +8,13 @@ from .models import Result
 
 
 def parse_results(html: str) -> list[Result]:
-    """Parse the results table out of a kryssord.org search.php response."""
+    """Parse the results table out of a kryssord.org search.php response.
+
+    Note: kryssord.org caps results at ~8-9 rows for anonymous requests
+    regardless of the "Fant N" total in the header -- the rest is gated
+    behind their own login ("logg inn for tilgang til flere treff"). This
+    only returns what's actually present in the markup.
+    """
     soup = BeautifulSoup(html, "lxml")
     results = []
     for row in soup.select("div.results table tbody tr"):
