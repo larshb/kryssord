@@ -84,6 +84,31 @@ async def test_empty_submit_shows_validation_and_skips_search(tmp_path):
     assert history.load_all() == []
 
 
+async def test_wildcard_in_word_field_searches_immediately_and_skips_naob(tmp_path):
+    client = StubClient(CANNED_RESULTS)
+    history = HistoryStore(path=tmp_path / "history.jsonl")
+    naob_client = StubNaobClient()
+    app = KryssordApp(client=client, history=history, naob_client=naob_client)
+
+    async with app.run_test() as pilot:
+        await pilot.press(*"hu.d")
+        await pilot.press("enter")
+        await app.workers.wait_for_complete()
+        await pilot.pause()
+
+        # "." got translated to "?" and the search fired on the first Enter,
+        # without waiting on the pattern field
+        assert client.calls == [("hu?d", "")]
+        assert app.query_one("#pattern", Input).value == ""
+
+        # a wildcard word isn't a real headword -- no point looking it up
+        assert naob_client.search_calls == []
+
+    entries = history.load_all()
+    assert len(entries) == 1
+    assert entries[0].word == "hu?d"
+
+
 async def test_initial_search_also_looks_up_naob_for_the_typed_word(tmp_path):
     client = StubClient(CANNED_RESULTS)
     history = HistoryStore(path=tmp_path / "history.jsonl")

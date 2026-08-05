@@ -57,12 +57,19 @@ def _format_naob_entries(entries: list[NaobEntry]) -> str:
     return "\n\n".join(_format_naob_entry(entry) for entry in entries)
 
 
+def _looks_like_pattern(text: str) -> bool:
+    """True if `text` uses wildcard syntax (. / ? / *) rather than being a plain word."""
+    return any(c in text for c in ".?*")
+
+
 class KryssordApp(App):
     """Keyboard-only crossword lookup for kryssord.org.
 
     Flow: type a word/hint, Enter, (optionally) type a letter pattern
     ('.' = one unknown letter, '*' = any number of unknown letters),
-    Enter -> results.
+    Enter -> results. The word field itself also accepts wildcards (e.g.
+    "hu.d" or "hu*d") -- typing one there and pressing Enter searches
+    immediately, skipping the separate pattern field.
     """
 
     BINDINGS = [Binding("ctrl+q", "quit", "Avslutt")]
@@ -100,7 +107,7 @@ class KryssordApp(App):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Input(id="word", placeholder="Ord/hint...")
+        yield Input(id="word", placeholder="Ord/hint, evt. mønster (. / *)...")
         yield Input(id="pattern", placeholder="Mønster: . = én bokstav, * = flere...")
         yield Static(id="status")
         yield DataTable(id="results")
@@ -120,12 +127,19 @@ class KryssordApp(App):
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         if event.input.id == "word":
-            self.query_one("#pattern", Input).focus()
+            word_value = self.query_one("#word", Input).value.strip()
+            if _looks_like_pattern(word_value):
+                # a= supports wildcards standalone (e.g. "hu?d") -- no need to
+                # wait on a separate pattern field in that case.
+                self._start_search()
+            else:
+                self.query_one("#pattern", Input).focus()
         elif event.input.id == "pattern":
             self._start_search()
 
     def _start_search(self) -> None:
-        word = self.query_one("#word", Input).value.strip()
+        word_raw = self.query_one("#word", Input).value.strip()
+        word = word_raw.replace(".", "?")
         pattern_raw = self.query_one("#pattern", Input).value.strip()
         pattern = pattern_raw.replace(".", "?")
 
@@ -137,8 +151,8 @@ class KryssordApp(App):
         self._last_pattern_raw = pattern_raw
         self._set_status("Søker...")
         self._run_search(word, pattern)
-        if word:
-            self._lookup_naob(word)
+        if word_raw and not _looks_like_pattern(word_raw):
+            self._lookup_naob(word_raw)
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
         if event.data_table.id != "results" or event.cursor_row >= len(self._last_results):
