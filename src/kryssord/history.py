@@ -13,11 +13,7 @@ def _default_history_path() -> Path:
 
 
 class HistoryStore:
-    """Append-only log of past searches, persisted as JSON lines.
-
-    Navigating history is a future feature; this just records searches so
-    that data exists once that feature is built.
-    """
+    """Append-only log of past searches, persisted as JSON lines."""
 
     def __init__(self, path: str | Path | None = None) -> None:
         self._path = Path(path) if path else _default_history_path()
@@ -60,3 +56,12 @@ class HistoryStore:
                     )
                 )
         return entries
+
+
+def dedupe_history(entries: list[HistoryEntry]) -> list[HistoryEntry]:
+    """Collapse repeats of the same (word, pattern) to their most recent
+    occurrence, newest first."""
+    latest: dict[tuple[str, str], HistoryEntry] = {}
+    for entry in entries:  # load_all() returns oldest-first; later entries overwrite
+        latest[(entry.word, entry.pattern)] = entry
+    return sorted(latest.values(), key=lambda e: e.timestamp, reverse=True)

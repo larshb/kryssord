@@ -1,6 +1,7 @@
 from datetime import date
 
 from kryssord.history import HistoryStore
+from kryssord.history_screen import HistoryScreen
 from kryssord.models import NaobEntry, NaobIdiom, NaobSearchEntry, NaobSense, Result
 from kryssord.tui import KryssordApp, _format_naob_entries, _format_naob_entry
 from textual.widgets import DataTable, Input, Static
@@ -41,7 +42,7 @@ CANNED_RESULTS = [
 async def test_full_search_flow_translates_dot_and_records_history(tmp_path):
     client = StubClient(CANNED_RESULTS)
     history = HistoryStore(path=tmp_path / "history.jsonl")
-    app = KryssordApp(client=client, history=history, naob_client=StubNaobClient())
+    app = KryssordApp(client=client, history=history, naob_client=StubNaobClient(), theme_path=tmp_path / "theme.txt")
 
     async with app.run_test() as pilot:
         await pilot.press(*"hund")
@@ -51,10 +52,12 @@ async def test_full_search_flow_translates_dot_and_records_history(tmp_path):
         await app.workers.wait_for_complete()
         await pilot.pause()
 
-        assert client.calls == [("hund", "b??")]
+        # typed lowercase, but the fields show/search uppercase (crossword style)
+        assert client.calls == [("HUND", "B??")]
 
         table = app.query_one("#results", DataTable)
         assert table.row_count == 2
+        assert table.get_cell_at((0, 0)) == "HUND"
 
         assert app.query_one("#word", Input).value == ""
         assert app.query_one("#pattern", Input).value == ""
@@ -62,15 +65,15 @@ async def test_full_search_flow_translates_dot_and_records_history(tmp_path):
 
     entries = history.load_all()
     assert len(entries) == 1
-    assert entries[0].word == "hund"
-    assert entries[0].pattern == "b??"
+    assert entries[0].word == "HUND"
+    assert entries[0].pattern == "B??"
     assert entries[0].result_count == 2
 
 
 async def test_empty_submit_shows_validation_and_skips_search(tmp_path):
     client = StubClient([])
     history = HistoryStore(path=tmp_path / "history.jsonl")
-    app = KryssordApp(client=client, history=history, naob_client=StubNaobClient())
+    app = KryssordApp(client=client, history=history, naob_client=StubNaobClient(), theme_path=tmp_path / "theme.txt")
 
     async with app.run_test() as pilot:
         await pilot.press("enter")
@@ -84,11 +87,41 @@ async def test_empty_submit_shows_validation_and_skips_search(tmp_path):
     assert history.load_all() == []
 
 
-async def test_wildcard_in_word_field_searches_immediately_and_skips_naob(tmp_path):
+async def test_arrow_keys_navigate_results_while_word_field_focused(tmp_path):
     client = StubClient(CANNED_RESULTS)
     history = HistoryStore(path=tmp_path / "history.jsonl")
     naob_client = StubNaobClient()
-    app = KryssordApp(client=client, history=history, naob_client=naob_client)
+    app = KryssordApp(client=client, history=history, naob_client=naob_client, theme_path=tmp_path / "theme.txt")
+
+    async with app.run_test() as pilot:
+        await pilot.press(*"hund")
+        await pilot.press("enter")
+        await pilot.press("enter")
+        await app.workers.wait_for_complete()
+        await pilot.pause()
+
+        table = app.query_one("#results", DataTable)
+        assert table.cursor_row == 0
+        assert app.focused is app.query_one("#word", Input)  # focus stayed on #word
+
+        await pilot.press("down")
+        await pilot.pause()
+        assert table.cursor_row == 1
+        # moving the highlight (without pressing Enter) previews that row's
+        # word in the NAOB panel, without re-running the kryssord search
+        assert naob_client.search_calls[-1] == "katt"
+        assert client.calls == [("HUND", "")]
+
+        await pilot.press("up")
+        await pilot.pause()
+        assert table.cursor_row == 0
+
+
+async def test_wildcard_in_word_field_searches_immediately_and_skips_naob_for_the_pattern(tmp_path):
+    client = StubClient(CANNED_RESULTS)
+    history = HistoryStore(path=tmp_path / "history.jsonl")
+    naob_client = StubNaobClient()
+    app = KryssordApp(client=client, history=history, naob_client=naob_client, theme_path=tmp_path / "theme.txt")
 
     async with app.run_test() as pilot:
         await pilot.press(*"hu.d")
@@ -98,15 +131,17 @@ async def test_wildcard_in_word_field_searches_immediately_and_skips_naob(tmp_pa
 
         # "." got translated to "?" and the search fired on the first Enter,
         # without waiting on the pattern field
-        assert client.calls == [("hu?d", "")]
+        assert client.calls == [("HU?D", "")]
         assert app.query_one("#pattern", Input).value == ""
 
-        # a wildcard word isn't a real headword -- no point looking it up
-        assert naob_client.search_calls == []
+        # the wildcard string itself ("hu?d") isn't a real headword -- no
+        # point looking that up -- but the results are real words, and the
+        # first one is still previewed
+        assert naob_client.search_calls == ["hund"]
 
     entries = history.load_all()
     assert len(entries) == 1
-    assert entries[0].word == "hu?d"
+    assert entries[0].word == "HU?D"
 
 
 async def test_initial_search_also_looks_up_naob_for_the_typed_word(tmp_path):
@@ -127,7 +162,7 @@ async def test_initial_search_also_looks_up_naob_for_the_typed_word(tmp_path):
             )
         },
     )
-    app = KryssordApp(client=client, history=history, naob_client=naob_client)
+    app = KryssordApp(client=client, history=history, naob_client=naob_client, theme_path=tmp_path / "theme.txt")
 
     async with app.run_test() as pilot:
         await pilot.press(*"hund")
@@ -136,8 +171,12 @@ async def test_initial_search_also_looks_up_naob_for_the_typed_word(tmp_path):
         await app.workers.wait_for_complete()
         await pilot.pause()
 
-        assert naob_client.search_calls == ["hund"]
-        assert naob_client.entry_calls == ["hund"]
+        # looked up once from the incidental row-0 preview (uses the result
+        # data's own casing) and once as the explicit "show me the searched
+        # word" lookup (uses the uppercased input) -- harmless overlap,
+        # cheap thanks to caching in the real client, and the naob match is
+        # case-insensitive either way
+        assert naob_client.search_calls == ["hund", "HUND"]
         naob_text = str(app.query_one("#naob", Static).render())
         assert "rovdyr" in naob_text
 
@@ -173,7 +212,7 @@ async def test_selecting_result_drills_down_and_shows_all_homograph_entries(tmp_
             ),
         },
     )
-    app = KryssordApp(client=client, history=history, naob_client=naob_client)
+    app = KryssordApp(client=client, history=history, naob_client=naob_client, theme_path=tmp_path / "theme.txt")
 
     async with app.run_test() as pilot:
         await pilot.press(*"hund")
@@ -191,19 +230,142 @@ async def test_selecting_result_drills_down_and_shows_all_homograph_entries(tmp_
         await app.workers.wait_for_complete()
         await pilot.pause()
 
-        # naob was asked once for the originally typed word ("hund", no match
-        # configured) and once for the drilled-down word ("katt")
-        assert naob_client.search_calls == ["hund", "katt"]
-        assert naob_client.entry_calls == ["katt_1", "katt_2"]
+        # Along the way, browsing to row 1 previews "katt" and the table
+        # repopulating after the drill-down incidentally re-previews row 0
+        # ("hund") -- but the explicit "show me the drilled-down word"
+        # lookup is scheduled to run last, so it's what actually ends up
+        # displayed, not whichever incidental preview raced it.
+        assert naob_client.search_calls[-1] == "katt"
+        assert naob_client.entry_calls[-2:] == ["katt_1", "katt_2"]
 
-        assert client.calls[-1] == ("katt", "b??")
-        assert app.query_one("#word", Input).value == "katt"
+        assert client.calls[-1] == ("katt", "B??")
+        assert app.query_one("#word", Input).value == "KATT"
         assert app.focused is table
 
         naob_text = str(app.query_one("#naob", Static).render())
         assert "tamkatt" in naob_text
         assert "dataspill med katt og mus" in naob_text
         assert "en; katten, katter" in naob_text
+
+
+async def test_theme_defaults_to_ansi_dark_and_persists_across_runs(tmp_path):
+    theme_path = tmp_path / "theme.txt"
+    naob_client = StubNaobClient()
+
+    app = KryssordApp(client=StubClient([]), history=HistoryStore(path=tmp_path / "h.jsonl"), naob_client=naob_client, theme_path=theme_path)
+    async with app.run_test():
+        assert app.theme == "ansi-dark"
+        app.theme = "nord"
+        assert theme_path.read_text().strip() == "nord"
+
+    # a fresh app picks up the previously saved theme instead of the default
+    app2 = KryssordApp(client=StubClient([]), history=HistoryStore(path=tmp_path / "h.jsonl"), naob_client=naob_client, theme_path=theme_path)
+    async with app2.run_test():
+        assert app2.theme == "nord"
+
+
+async def test_open_kryssord_and_naob_in_browser(tmp_path, monkeypatch):
+    opened = []
+    monkeypatch.setattr("kryssord.tui.webbrowser.open", lambda url: opened.append(url))
+
+    client = StubClient(CANNED_RESULTS)
+    history = HistoryStore(path=tmp_path / "history.jsonl")
+    naob_client = StubNaobClient(
+        search_results=[
+            NaobSearchEntry(word="hund", slug="hund_1", word_class="substantiv", short_definition=""),
+            NaobSearchEntry(word="hund", slug="hund_2", word_class="substantiv", short_definition=""),
+        ],
+        entries_by_slug={
+            "hund_1": NaobEntry(
+                word="hund", slug="hund_1", word_class="substantiv", inflection=None, etymology=None,
+                senses=[], idioms=[], idiom_count=0,
+            ),
+            "hund_2": NaobEntry(
+                word="hund", slug="hund_2", word_class="substantiv", inflection=None, etymology=None,
+                senses=[], idioms=[], idiom_count=0,
+            ),
+        },
+    )
+    app = KryssordApp(client=client, history=history, naob_client=naob_client, theme_path=tmp_path / "theme.txt")
+
+    async with app.run_test() as pilot:
+        # nothing searched yet -- both open actions should no-op with a status message
+        app.action_open_kryssord()
+        assert opened == []
+        app.action_open_naob()
+        assert opened == []
+
+        await pilot.press(*"hund")
+        await pilot.press("enter")
+        await pilot.press(*"b..")
+        await pilot.press("enter")
+        await app.workers.wait_for_complete()
+        await pilot.pause()
+
+        app.action_open_kryssord()
+        assert opened == ["https://www.kryssord.org/search.php?a=HUND&b=B%3F%3F"]
+
+        app.action_open_naob()
+        assert opened[1:] == [
+            "https://naob.no/ordbok/hund_1",
+            "https://naob.no/ordbok/hund_2",
+        ]
+
+
+async def test_open_history_with_no_history_shows_status(tmp_path):
+    app = KryssordApp(
+        client=StubClient([]),
+        history=HistoryStore(path=tmp_path / "history.jsonl"),
+        naob_client=StubNaobClient(),
+        theme_path=tmp_path / "theme.txt",
+    )
+
+    async with app.run_test() as pilot:
+        app.action_open_history()
+        await pilot.pause()
+
+        assert len(app.screen_stack) == 1  # no modal pushed
+        assert "Ingen søkehistorikk" in str(app.query_one("#status", Static).render())
+
+
+async def test_selecting_history_entry_populates_fields_and_searches(tmp_path):
+    client = StubClient(CANNED_RESULTS)
+    history = HistoryStore(path=tmp_path / "history.jsonl")
+    history.record(word="HUND", pattern="", result_count=8)
+    history.record(word="KATT", pattern="B??", result_count=2)  # most recent
+    app = KryssordApp(client=client, history=history, naob_client=StubNaobClient(), theme_path=tmp_path / "theme.txt")
+
+    async with app.run_test() as pilot:
+        app.action_open_history()
+        await pilot.pause()
+
+        assert isinstance(app.screen, HistoryScreen)
+        await pilot.press("enter")  # top row = most recent = "KATT"/"B??"
+        await app.workers.wait_for_complete()
+        await pilot.pause()
+
+        assert not isinstance(app.screen, HistoryScreen)  # modal closed
+        assert client.calls[-1] == ("KATT", "B??")
+        # search completed normally -- fields cleared, focus back on #word
+        assert app.query_one("#word", Input).value == ""
+        assert app.focused is app.query_one("#word", Input)
+
+
+async def test_escape_dismisses_history_without_searching(tmp_path):
+    client = StubClient(CANNED_RESULTS)
+    history = HistoryStore(path=tmp_path / "history.jsonl")
+    history.record(word="HUND", pattern="", result_count=8)
+    app = KryssordApp(client=client, history=history, naob_client=StubNaobClient(), theme_path=tmp_path / "theme.txt")
+
+    async with app.run_test() as pilot:
+        app.action_open_history()
+        await pilot.pause()
+
+        await pilot.press("escape")
+        await pilot.pause()
+
+        assert not isinstance(app.screen, HistoryScreen)
+        assert client.calls == []
 
 
 def test_format_naob_entry_includes_word_class_inflection_and_senses():

@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import webbrowser
+from pathlib import Path
+from urllib.parse import quote, urlencode
+
 import requests
 from rich.markup import escape
 from textual import work
@@ -8,12 +12,22 @@ from textual.binding import Binding
 from textual.containers import VerticalScroll
 from textual.widgets import DataTable, Footer, Header, Input, Static
 
+from .client import SEARCH_URL as KRYSSORD_SEARCH_URL
 from .client import KryssordClient
-from .history import HistoryStore
-from .models import NaobEntry, Result
+from .history import HistoryStore, dedupe_history
+from .history_screen import HistoryScreen
+from .models import HistoryEntry, NaobEntry, Result
+from .naob_client import BASE_URL as NAOB_BASE_URL
 from .naob_client import NaobClient
+from .paths import default_data_dir
 
-RESULT_COLUMNS = ("Ord", "Ant. ord", "Lengde", "Bruker", "Sist sett")
+RESULT_COLUMNS = ("Ord", "Lengde")
+
+DEFAULT_THEME = "ansi-dark"
+
+
+def _default_theme_path() -> Path:
+    return default_data_dir() / "theme.txt"
 
 # naob.no can have several homograph entries for the same headword (e.g.
 # "vise" as two different nouns and a verb) -- cap how many full entries get
@@ -72,7 +86,14 @@ class KryssordApp(App):
     immediately, skipping the separate pattern field.
     """
 
-    BINDINGS = [Binding("ctrl+q", "quit", "Avslutt")]
+    BINDINGS = [
+        Binding("ctrl+q", "quit", "Avslutt"),
+        Binding("up", "results_cursor_up", "Bla opp", show=False),
+        Binding("down", "results_cursor_down", "Bla ned", show=False),
+        Binding("o", "open_kryssord", "Åpne kryssord.org"),
+        Binding("n", "open_naob", "Åpne NAOB"),
+        Binding("h", "open_history", "Historikk"),
+    ]
 
     CSS = """
     #status {
@@ -81,7 +102,7 @@ class KryssordApp(App):
         color: $text-muted;
     }
     #results {
-        height: 3fr;
+        height: 2fr;
     }
     #naob-panel {
         height: 1fr;
@@ -95,6 +116,7 @@ class KryssordApp(App):
         client: KryssordClient | None = None,
         history: HistoryStore | None = None,
         naob_client: NaobClient | None = None,
+        theme_path: str | Path | None = None,
     ) -> None:
         super().__init__()
         self._client = client or KryssordClient()
@@ -104,6 +126,22 @@ class KryssordApp(App):
         self._owns_naob_client = naob_client is None
         self._last_results: list[Result] = []
         self._last_pattern_raw: str = ""
+        self._last_search_word: str = ""
+        self._last_search_pattern: str = ""
+        self._current_naob_slugs: list[str] = []
+        self._theme_path = Path(theme_path) if theme_path else _default_theme_path()
+        self.theme = self._load_theme()
+
+    def _load_theme(self) -> str:
+        if self._theme_path.exists():
+            saved = self._theme_path.read_text().strip()
+            if saved:
+                return saved
+        return DEFAULT_THEME
+
+    def watch_theme(self, old_theme: str, new_theme: str) -> None:
+        self._theme_path.parent.mkdir(parents=True, exist_ok=True)
+        self._theme_path.write_text(new_theme)
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -124,6 +162,15 @@ class KryssordApp(App):
         naob_panel = self.query_one("#naob-panel")
         naob_panel.border_title = "NAOB"
         self._set_naob_text("Velg et treff (Enter) for å slå opp i NAOB.")
+
+    def on_input_changed(self, event: Input.Changed) -> None:
+        if event.input.id not in ("word", "pattern"):
+            return
+        upper = event.value.upper()
+        if event.value != upper:
+            cursor = event.input.cursor_position
+            event.input.value = upper
+            event.input.cursor_position = cursor
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         if event.input.id == "word":
@@ -151,8 +198,14 @@ class KryssordApp(App):
         self._last_pattern_raw = pattern_raw
         self._set_status("Søker...")
         self._run_search(word, pattern)
-        if word_raw and not _looks_like_pattern(word_raw):
-            self._lookup_naob(word_raw)
+
+    def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
+        # Fires as the cursor moves (e.g. arrow keys), even without pressing
+        # Enter -- browsing the results previews each word's NAOB entry.
+        if event.data_table.id != "results" or event.cursor_row >= len(self._last_results):
+            return
+        word = self._last_results[event.cursor_row].word
+        self._lookup_naob(word)
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
         if event.data_table.id != "results" or event.cursor_row >= len(self._last_results):
@@ -165,7 +218,42 @@ class KryssordApp(App):
         pattern = self._last_pattern_raw.replace(".", "?")
         self._set_status("Søker...")
         self._run_search(word, pattern, focus_after="results")
-        self._lookup_naob(word)
+
+    def action_results_cursor_up(self) -> None:
+        self.query_one("#results", DataTable).action_cursor_up()
+
+    def action_results_cursor_down(self) -> None:
+        self.query_one("#results", DataTable).action_cursor_down()
+
+    def action_open_kryssord(self) -> None:
+        if not self._last_search_word and not self._last_search_pattern:
+            self._set_status("Ingen søk å åpne ennå.")
+            return
+        query = urlencode({"a": self._last_search_word, "b": self._last_search_pattern})
+        webbrowser.open(f"{KRYSSORD_SEARCH_URL}?{query}")
+        self._set_status("Åpnet kryssord.org i nettleser.")
+
+    def action_open_naob(self) -> None:
+        if not self._current_naob_slugs:
+            self._set_status("Ingen NAOB-oppføring å åpne ennå.")
+            return
+        for slug in self._current_naob_slugs:
+            webbrowser.open(f"{NAOB_BASE_URL}/ordbok/{quote(slug, safe='')}")
+        self._set_status(f"Åpnet {len(self._current_naob_slugs)} NAOB-oppføring(er) i nettleser.")
+
+    def action_open_history(self) -> None:
+        entries = dedupe_history(self._history.load_all())
+        if not entries:
+            self._set_status("Ingen søkehistorikk ennå.")
+            return
+        self.push_screen(HistoryScreen(entries), callback=self._on_history_selected)
+
+    def _on_history_selected(self, entry: HistoryEntry | None) -> None:
+        if entry is None:
+            return
+        self.query_one("#word", Input).value = entry.word
+        self.query_one("#pattern", Input).value = entry.pattern
+        self._start_search()
 
     @work(thread=True, exclusive=True)
     def _run_search(self, word: str, pattern: str, focus_after: str = "word") -> None:
@@ -178,13 +266,14 @@ class KryssordApp(App):
 
     def _show_results(self, word: str, pattern: str, results: list[Result], focus_after: str = "word") -> None:
         self._last_results = results
+        self._last_search_word = word
+        self._last_search_pattern = pattern
         self._history.record(word, pattern, len(results))
 
         table = self.query_one("#results", DataTable)
         table.clear()
         for r in results:
-            seen = r.last_seen.isoformat() if r.last_seen else "-"
-            table.add_row(r.word, str(r.word_count), str(r.length), str(r.users), seen)
+            table.add_row(r.word.upper(), str(r.length))
 
         self._set_status("Ingen treff." if not results else "")
 
@@ -195,6 +284,14 @@ class KryssordApp(App):
         else:
             self.query_one("#results", DataTable).focus()
 
+        # Populating the table above triggers an incidental row-highlight
+        # (previewing row 0), which would otherwise race with -- and can
+        # overwrite -- the lookup for the word that was actually searched
+        # for. Schedule this one to run after that settles, so it always
+        # wins and ends up as what's shown.
+        if word and not _looks_like_pattern(word):
+            self.call_after_refresh(self._lookup_naob, word)
+
     def _lookup_naob(self, word: str) -> None:
         self._set_naob_text(f"Slår opp «{word}» i NAOB...")
         self._run_naob_lookup(word)
@@ -204,12 +301,12 @@ class KryssordApp(App):
         try:
             matches = self._naob_client.search(word)
         except requests.RequestException as exc:
-            self.call_from_thread(self._set_naob_text, f"Feil ved NAOB-oppslag: {exc}")
+            self.call_from_thread(self._clear_naob, f"Feil ved NAOB-oppslag: {exc}")
             return
 
         exact_matches = [m for m in matches if m.word.lower() == word.lower()]
         if not exact_matches:
-            self.call_from_thread(self._set_naob_text, f"Ingen NAOB-oppføring for «{word}».")
+            self.call_from_thread(self._clear_naob, f"Ingen NAOB-oppføring for «{word}».")
             return
 
         entries = []
@@ -217,16 +314,24 @@ class KryssordApp(App):
             try:
                 entry = self._naob_client.get_entry(match.slug)
             except requests.RequestException as exc:
-                self.call_from_thread(self._set_naob_text, f"Feil ved NAOB-oppslag: {exc}")
+                self.call_from_thread(self._clear_naob, f"Feil ved NAOB-oppslag: {exc}")
                 return
             if entry is not None:
                 entries.append(entry)
 
         if not entries:
-            self.call_from_thread(self._set_naob_text, f"Ingen NAOB-oppføring for «{word}».")
+            self.call_from_thread(self._clear_naob, f"Ingen NAOB-oppføring for «{word}».")
             return
 
-        self.call_from_thread(self._set_naob_text, _format_naob_entries(entries))
+        self.call_from_thread(self._show_naob_entries, entries)
+
+    def _show_naob_entries(self, entries: list[NaobEntry]) -> None:
+        self._current_naob_slugs = [e.slug for e in entries]
+        self._set_naob_text(_format_naob_entries(entries))
+
+    def _clear_naob(self, message: str) -> None:
+        self._current_naob_slugs = []
+        self._set_naob_text(message)
 
     def _set_status(self, message: str) -> None:
         self.query_one("#status", Static).update(message)
