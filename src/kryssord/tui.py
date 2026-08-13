@@ -9,7 +9,8 @@ from rich.markup import escape
 from textual import work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import VerticalScroll
+from textual.containers import Horizontal, VerticalScroll
+from textual.events import Resize
 from textual.widgets import DataTable, Footer, Header, Input, Static
 
 from .client import SEARCH_URL as KRYSSORD_SEARCH_URL
@@ -23,6 +24,20 @@ from .paths import default_data_dir
 
 RESULT_COLUMNS = ("Ord", "Lengde")
 
+# A monospace terminal cell is roughly twice as tall as it is wide, so raw
+# column/row counts don't reflect the *visual* aspect ratio. This corrects
+# for that when deciding whether the window is landscape enough for a
+# side-by-side layout. The threshold sits between a half-screen 16:9 window
+# (~0.89 width:height) and a half-screen 16:10 window (~0.80) -- roughly
+# where the user wants the switch to happen.
+GLYPH_ASPECT = 0.5
+LAYOUT_SWITCH_ASPECT = 0.86
+
+
+def _is_landscape(width: int, height: int) -> bool:
+    return (width * GLYPH_ASPECT) / height >= LAYOUT_SWITCH_ASPECT
+
+
 DEFAULT_THEME = "ansi-dark"
 
 
@@ -35,7 +50,8 @@ def _default_theme_path() -> Path:
 MAX_NAOB_ENTRIES = 5
 
 # naob.no's own accent color for section headings (ETYMOLOGI, UTTRYKK, ...),
-# reused here for our equivalent labels.
+# reused here for our equivalent labels. Hardcoded rather than theme-derived
+# because this is reproducing NAOB's own document styling, not app chrome.
 NAOB_RED = "#a54242"
 
 
@@ -101,13 +117,30 @@ class KryssordApp(App):
         padding: 0 1;
         color: $text-muted;
     }
+    #main-row {
+        height: 1fr;
+    }
     #results {
-        height: 2fr;
+        /* $primary is blue in most themes, incl. the ansi-dark default */
+        width: 1fr;
+        height: 1fr;
+        border: solid $primary;
     }
     #naob-panel {
+        /* $error is red/red-ish in every built-in theme */
+        width: 1fr;
         height: 1fr;
-        border: solid $accent;
+        border: solid $error;
         padding: 0 1;
+    }
+    #main-row.stacked {
+        layout: vertical;
+    }
+    #main-row.stacked #results {
+        height: 2fr;
+    }
+    #main-row.stacked #naob-panel {
+        height: 1fr;
     }
     """
 
@@ -129,6 +162,7 @@ class KryssordApp(App):
         self._last_search_word: str = ""
         self._last_search_pattern: str = ""
         self._current_naob_slugs: list[str] = []
+        self._suppress_naob_highlight = False
         self._theme_path = Path(theme_path) if theme_path else _default_theme_path()
         self.theme = self._load_theme()
 
@@ -148,20 +182,37 @@ class KryssordApp(App):
         yield Input(id="word", placeholder="Ord/hint, evt. mønster (. / *)...")
         yield Input(id="pattern", placeholder="Mønster: . = én bokstav, * = flere...")
         yield Static(id="status")
-        yield DataTable(id="results")
-        with VerticalScroll(id="naob-panel"):
-            yield Static(id="naob")
+        with Horizontal(id="main-row"):
+            yield DataTable(id="results")
+            with VerticalScroll(id="naob-panel"):
+                yield Static(id="naob")
         yield Footer()
 
     def on_mount(self) -> None:
         table = self.query_one("#results", DataTable)
         table.add_columns(*RESULT_COLUMNS)
         table.cursor_type = "row"
+        table.border_title = "kryssord.org"
         self.query_one("#word", Input).focus()
+        self._update_layout_orientation(self.size.width, self.size.height)
 
         naob_panel = self.query_one("#naob-panel")
-        naob_panel.border_title = "NAOB"
+        naob_panel.border_title = "naob.no"
         self._set_naob_text("Velg et treff (Enter) for å slå opp i NAOB.")
+
+    def on_resize(self, event: Resize) -> None:
+        # Prefer the terminal's actual reported pixel size (many terminals
+        # support the XTWINOPS query Textual uses for this) over the
+        # character-count approximation -- it's exact instead of guessing
+        # at the glyph aspect ratio.
+        if event.pixel_size is not None and event.pixel_size.height:
+            landscape = (event.pixel_size.width / event.pixel_size.height) >= LAYOUT_SWITCH_ASPECT
+        else:
+            landscape = _is_landscape(event.size.width, event.size.height)
+        self.query_one("#main-row").set_class(not landscape, "stacked")
+
+    def _update_layout_orientation(self, width: int, height: int) -> None:
+        self.query_one("#main-row").set_class(not _is_landscape(width, height), "stacked")
 
     def on_input_changed(self, event: Input.Changed) -> None:
         if event.input.id not in ("word", "pattern"):
@@ -202,6 +253,12 @@ class KryssordApp(App):
     def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
         # Fires as the cursor moves (e.g. arrow keys), even without pressing
         # Enter -- browsing the results previews each word's NAOB entry.
+        # Suppressed right after a search populates the table, since that
+        # triggers this for row 0 too, even though the user hasn't actually
+        # navigated there themselves -- the a= clue's own NAOB lookup should
+        # stick until they do.
+        if self._suppress_naob_highlight:
+            return
         if event.data_table.id != "results" or event.cursor_row >= len(self._last_results):
             return
         word = self._last_results[event.cursor_row].word
@@ -270,10 +327,16 @@ class KryssordApp(App):
         self._last_search_pattern = pattern
         self._history.record(word, pattern, len(results))
 
+        # Populating the table below triggers an incidental row-highlight
+        # for row 0, even though the user hasn't actually navigated there --
+        # suppress that one lookup so it doesn't briefly override the a=
+        # clue's own NAOB entry with the top result's.
+        self._suppress_naob_highlight = True
         table = self.query_one("#results", DataTable)
         table.clear()
         for r in results:
             table.add_row(r.word.upper(), str(r.length))
+        self.call_after_refresh(self._stop_suppressing_naob_highlight)
 
         self._set_status("Ingen treff." if not results else "")
 
@@ -284,13 +347,11 @@ class KryssordApp(App):
         else:
             self.query_one("#results", DataTable).focus()
 
-        # Populating the table above triggers an incidental row-highlight
-        # (previewing row 0), which would otherwise race with -- and can
-        # overwrite -- the lookup for the word that was actually searched
-        # for. Schedule this one to run after that settles, so it always
-        # wins and ends up as what's shown.
         if word and not _looks_like_pattern(word):
-            self.call_after_refresh(self._lookup_naob, word)
+            self._lookup_naob(word)
+
+    def _stop_suppressing_naob_highlight(self) -> None:
+        self._suppress_naob_highlight = False
 
     def _lookup_naob(self, word: str) -> None:
         self._set_naob_text(f"Slår opp «{word}» i NAOB...")

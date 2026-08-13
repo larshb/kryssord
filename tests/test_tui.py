@@ -134,10 +134,13 @@ async def test_wildcard_in_word_field_searches_immediately_and_skips_naob_for_th
         assert client.calls == [("HU?D", "")]
         assert app.query_one("#pattern", Input).value == ""
 
-        # the wildcard string itself ("hu?d") isn't a real headword -- no
-        # point looking that up -- but the results are real words, and the
-        # first one is still previewed
-        assert naob_client.search_calls == ["hund"]
+        # the wildcard string itself ("hu?d") isn't a real headword, and no
+        # result gets auto-previewed until the results pane is navigated to
+        assert naob_client.search_calls == []
+
+        await pilot.press("down")  # navigating in from #word moves to row 0 -> row 1
+        await pilot.pause()
+        assert naob_client.search_calls == ["katt"]
 
     entries = history.load_all()
     assert len(entries) == 1
@@ -171,12 +174,10 @@ async def test_initial_search_also_looks_up_naob_for_the_typed_word(tmp_path):
         await app.workers.wait_for_complete()
         await pilot.pause()
 
-        # looked up once from the incidental row-0 preview (uses the result
-        # data's own casing) and once as the explicit "show me the searched
-        # word" lookup (uses the uppercased input) -- harmless overlap,
-        # cheap thanks to caching in the real client, and the naob match is
-        # case-insensitive either way
-        assert naob_client.search_calls == ["hund", "HUND"]
+        # only the a= clue itself is looked up -- the incidental row-0
+        # highlight from populating the table is suppressed, so it doesn't
+        # briefly show a different word before settling on this one
+        assert naob_client.search_calls == ["HUND"]
         naob_text = str(app.query_one("#naob", Static).render())
         assert "rovdyr" in naob_text
 
@@ -230,13 +231,11 @@ async def test_selecting_result_drills_down_and_shows_all_homograph_entries(tmp_
         await app.workers.wait_for_complete()
         await pilot.pause()
 
-        # Along the way, browsing to row 1 previews "katt" and the table
-        # repopulating after the drill-down incidentally re-previews row 0
-        # ("hund") -- but the explicit "show me the drilled-down word"
-        # lookup is scheduled to run last, so it's what actually ends up
-        # displayed, not whichever incidental preview raced it.
-        assert naob_client.search_calls[-1] == "katt"
-        assert naob_client.entry_calls[-2:] == ["katt_1", "katt_2"]
+        # "HUND" from the initial search, "katt" from browsing to row 1, then
+        # "katt" again as the explicit drill-down lookup -- no incidental
+        # re-preview of row 0 when the table repopulates after the drill-down.
+        assert naob_client.search_calls == ["HUND", "katt", "katt"]
+        assert naob_client.entry_calls == ["katt_1", "katt_2", "katt_1", "katt_2"]
 
         assert client.calls[-1] == ("katt", "B??")
         assert app.query_one("#word", Input).value == "KATT"
