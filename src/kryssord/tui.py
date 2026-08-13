@@ -268,7 +268,7 @@ class KryssordApp(App):
         if event.data_table.id != "results" or event.cursor_row >= len(self._last_results):
             return
 
-        word = self._last_results[event.cursor_row].word
+        word = self._last_results[event.cursor_row].word.upper()
         self.query_one("#word", Input).value = word
         self.query_one("#pattern", Input).value = self._last_pattern_raw
 

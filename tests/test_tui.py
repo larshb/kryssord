@@ -231,13 +231,15 @@ async def test_selecting_result_drills_down_and_shows_all_homograph_entries(tmp_
         await app.workers.wait_for_complete()
         await pilot.pause()
 
-        # "HUND" from the initial search, "katt" from browsing to row 1, then
-        # "katt" again as the explicit drill-down lookup -- no incidental
-        # re-preview of row 0 when the table repopulates after the drill-down.
-        assert naob_client.search_calls == ["HUND", "katt", "katt"]
+        # "HUND" from the initial search, "katt" from browsing to row 1
+        # (lowercase -- straight from the result data), then "KATT" as the
+        # explicit drill-down lookup (uppercased, matching what's now
+        # searched/recorded) -- no incidental re-preview of row 0 when the
+        # table repopulates after the drill-down.
+        assert naob_client.search_calls == ["HUND", "katt", "KATT"]
         assert naob_client.entry_calls == ["katt_1", "katt_2", "katt_1", "katt_2"]
 
-        assert client.calls[-1] == ("katt", "B??")
+        assert client.calls[-1] == ("KATT", "B??")
         assert app.query_one("#word", Input).value == "KATT"
         assert app.focused is table
 
@@ -245,6 +247,11 @@ async def test_selecting_result_drills_down_and_shows_all_homograph_entries(tmp_
         assert "tamkatt" in naob_text
         assert "dataspill med katt og mus" in naob_text
         assert "en; katten, katter" in naob_text
+
+    # drilling down into a result (whose word comes from the API in
+    # lowercase) must still record uppercase in history, matching the
+    # crossword-style display everywhere else
+    assert history.load_all()[-1].word == "KATT"
 
 
 async def test_theme_defaults_to_ansi_dark_and_persists_across_runs(tmp_path):
