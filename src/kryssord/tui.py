@@ -2,15 +2,17 @@ from __future__ import annotations
 
 import webbrowser
 from pathlib import Path
+from typing import Iterable
 from urllib.parse import quote, urlencode
 
 import requests
 from rich.markup import escape
 from textual import work
-from textual.app import App, ComposeResult
+from textual.app import App, ComposeResult, SystemCommand
 from textual.binding import Binding
 from textual.containers import Horizontal, VerticalScroll
 from textual.events import Resize
+from textual.screen import Screen
 from textual.widgets import DataTable, Footer, Header, Input, Static
 
 from .client import SEARCH_URL as KRYSSORD_SEARCH_URL
@@ -311,6 +313,12 @@ class KryssordApp(App):
         self.query_one("#word", Input).value = entry.word
         self.query_one("#pattern", Input).value = entry.pattern
         self._start_search()
+
+    def get_system_commands(self, screen: Screen) -> Iterable[SystemCommand]:
+        yield from super().get_system_commands(screen)
+        yield SystemCommand("Historikk", "Bla i søkehistorikk", self.action_open_history)
+        yield SystemCommand("Åpne kryssord.org", "Åpne siste søk i nettleser", self.action_open_kryssord)
+        yield SystemCommand("Åpne NAOB", "Åpne viste NAOB-oppføringer i nettleser", self.action_open_naob)
 
     @work(thread=True, exclusive=True)
     def _run_search(self, word: str, pattern: str, focus_after: str = "word") -> None:
