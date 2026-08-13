@@ -106,9 +106,9 @@ class KryssordApp(App):
         Binding("ctrl+q", "quit", "Avslutt"),
         Binding("up", "results_cursor_up", "Bla opp", show=False),
         Binding("down", "results_cursor_down", "Bla ned", show=False),
-        Binding("o", "open_kryssord", "Åpne kryssord.org"),
-        Binding("n", "open_naob", "Åpne NAOB"),
-        Binding("h", "open_history", "Historikk"),
+        Binding("ctrl+o", "open_kryssord", "Åpne kryssord.org"),
+        Binding("ctrl+n", "open_naob", "Åpne NAOB"),
+        Binding("ctrl+h", "open_history", "Historikk"),
     ]
 
     CSS = """
