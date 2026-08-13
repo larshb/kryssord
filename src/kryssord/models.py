@@ -31,8 +31,6 @@ class NaobSearchEntry:
 
     word: str
     slug: str
-    word_class: str | None
-    short_definition: str
 
 
 @dataclass(frozen=True, slots=True)

@@ -39,6 +39,32 @@ CANNED_RESULTS = [
 ]
 
 
+def make_naob_sense(number="1", text="definisjon", examples=None):
+    return NaobSense(number=number, text=text, examples=examples or [])
+
+
+def make_naob_entry(
+    word="ord",
+    slug=None,
+    word_class="substantiv",
+    inflection=None,
+    etymology=None,
+    senses=None,
+    idioms=None,
+    idiom_count=0,
+):
+    return NaobEntry(
+        word=word,
+        slug=slug or word,
+        word_class=word_class,
+        inflection=inflection,
+        etymology=etymology,
+        senses=senses if senses is not None else [make_naob_sense()],
+        idioms=idioms or [],
+        idiom_count=idiom_count,
+    )
+
+
 async def test_full_search_flow_translates_dot_and_records_history(tmp_path):
     client = StubClient(CANNED_RESULTS)
     history = HistoryStore(path=tmp_path / "history.jsonl")
@@ -151,17 +177,13 @@ async def test_initial_search_also_looks_up_naob_for_the_typed_word(tmp_path):
     client = StubClient(CANNED_RESULTS)
     history = HistoryStore(path=tmp_path / "history.jsonl")
     naob_client = StubNaobClient(
-        search_results=[NaobSearchEntry(word="hund", slug="hund", word_class="substantiv", short_definition="...")],
+        search_results=[NaobSearchEntry(word="hund", slug="hund")],
         entries_by_slug={
-            "hund": NaobEntry(
+            "hund": make_naob_entry(
                 word="hund",
-                slug="hund",
-                word_class="substantiv",
                 inflection="en; hunden, hunder",
                 etymology="av norrønt hundr",
-                senses=[NaobSense(number="1", text="temmet rovdyr i hundefamilien", examples=[])],
-                idioms=[],
-                idiom_count=0,
+                senses=[make_naob_sense(text="temmet rovdyr i hundefamilien")],
             )
         },
     )
@@ -187,29 +209,20 @@ async def test_selecting_result_drills_down_and_shows_all_homograph_entries(tmp_
     history = HistoryStore(path=tmp_path / "history.jsonl")
     naob_client = StubNaobClient(
         search_results=[
-            NaobSearchEntry(word="katt", slug="katt_1", word_class="substantiv", short_definition="..."),
-            NaobSearchEntry(word="katt", slug="katt_2", word_class="substantiv", short_definition="..."),
+            NaobSearchEntry(word="katt", slug="katt_1"),
+            NaobSearchEntry(word="katt", slug="katt_2"),
         ],
         entries_by_slug={
-            "katt_1": NaobEntry(
+            "katt_1": make_naob_entry(
                 word="katt",
                 slug="katt_1",
-                word_class="substantiv",
                 inflection="en; katten, katter",
-                etymology=None,
-                senses=[NaobSense(number="1", text="tamkatt, husdyr", examples=[])],
-                idioms=[],
-                idiom_count=0,
+                senses=[make_naob_sense(text="tamkatt, husdyr")],
             ),
-            "katt_2": NaobEntry(
+            "katt_2": make_naob_entry(
                 word="katt",
                 slug="katt_2",
-                word_class="substantiv",
-                inflection=None,
-                etymology=None,
-                senses=[NaobSense(number="1", text="dataspill med katt og mus", examples=[])],
-                idioms=[],
-                idiom_count=0,
+                senses=[make_naob_sense(text="dataspill med katt og mus")],
             ),
         },
     )
@@ -278,18 +291,12 @@ async def test_open_kryssord_and_naob_in_browser(tmp_path, monkeypatch):
     history = HistoryStore(path=tmp_path / "history.jsonl")
     naob_client = StubNaobClient(
         search_results=[
-            NaobSearchEntry(word="hund", slug="hund_1", word_class="substantiv", short_definition=""),
-            NaobSearchEntry(word="hund", slug="hund_2", word_class="substantiv", short_definition=""),
+            NaobSearchEntry(word="hund", slug="hund_1"),
+            NaobSearchEntry(word="hund", slug="hund_2"),
         ],
         entries_by_slug={
-            "hund_1": NaobEntry(
-                word="hund", slug="hund_1", word_class="substantiv", inflection=None, etymology=None,
-                senses=[], idioms=[], idiom_count=0,
-            ),
-            "hund_2": NaobEntry(
-                word="hund", slug="hund_2", word_class="substantiv", inflection=None, etymology=None,
-                senses=[], idioms=[], idiom_count=0,
-            ),
+            "hund_1": make_naob_entry(word="hund", slug="hund_1", senses=[]),
+            "hund_2": make_naob_entry(word="hund", slug="hund_2", senses=[]),
         },
     )
     app = KryssordApp(client=client, history=history, naob_client=naob_client, theme_path=tmp_path / "theme.txt")
@@ -375,18 +382,13 @@ async def test_escape_dismisses_history_without_searching(tmp_path):
 
 
 def test_format_naob_entry_includes_word_class_inflection_and_senses():
-    entry = NaobEntry(
+    entry = make_naob_entry(
         word="hund",
-        slug="hund",
-        word_class="substantiv",
         inflection="en; hunden, hunder",
-        etymology=None,
         senses=[
-            NaobSense(number="1", text="temmet rovdyr", examples=[]),
-            NaobSense(number="1.1", text="overført, om person", examples=[]),
+            make_naob_sense(number="1", text="temmet rovdyr"),
+            make_naob_sense(number="1.1", text="overført, om person"),
         ],
-        idioms=[],
-        idiom_count=0,
     )
     text = _format_naob_entry(entry)
 
@@ -398,15 +400,11 @@ def test_format_naob_entry_includes_word_class_inflection_and_senses():
 
 
 def test_format_naob_entry_includes_etymology_examples_and_idioms():
-    entry = NaobEntry(
+    entry = make_naob_entry(
         word="jul",
-        slug="jul",
-        word_class="substantiv",
         inflection="en; julen, juler",
         etymology="av gammeldansk jūl",
-        senses=[
-            NaobSense(number="1", text="høytid til minne om Kristi fødsel", examples=["komme hjem til jul"]),
-        ],
+        senses=[make_naob_sense(text="høytid til minne om Kristi fødsel", examples=["komme hjem til jul"])],
         idioms=[NaobIdiom(phrase="hvit jul", meaning="juletid med snø")],
         idiom_count=8,
     )
@@ -419,26 +417,8 @@ def test_format_naob_entry_includes_etymology_examples_and_idioms():
 
 
 def test_format_naob_entries_joins_multiple_entries():
-    entry_a = NaobEntry(
-        word="vise",
-        slug="vise_1",
-        word_class="substantiv",
-        inflection=None,
-        etymology=None,
-        senses=[],
-        idioms=[],
-        idiom_count=0,
-    )
-    entry_b = NaobEntry(
-        word="vise",
-        slug="vise_3",
-        word_class="verb",
-        inflection=None,
-        etymology=None,
-        senses=[],
-        idioms=[],
-        idiom_count=0,
-    )
+    entry_a = make_naob_entry(word="vise", slug="vise_1", senses=[])
+    entry_b = make_naob_entry(word="vise", slug="vise_3", word_class="verb", senses=[])
 
     text = _format_naob_entries([entry_a, entry_b])
 

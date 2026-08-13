@@ -160,6 +160,10 @@ class KryssordApp(App):
         self._owns_client = client is None
         self._owns_naob_client = naob_client is None
         self._last_results: list[Result] = []
+        # _last_pattern_raw is the *pre-translation* pattern text (dots, not
+        # "?"), kept for redisplay when drilling down; _last_search_word/
+        # _last_search_pattern are the *resolved* values actually sent to
+        # kryssord.org, used to reconstruct the "open in browser" URL.
         self._last_pattern_raw: str = ""
         self._last_search_word: str = ""
         self._last_search_pattern: str = ""
@@ -196,7 +200,7 @@ class KryssordApp(App):
         table.cursor_type = "row"
         table.border_title = "kryssord.org"
         self.query_one("#word", Input).focus()
-        self._update_layout_orientation(self.size.width, self.size.height)
+        self._apply_landscape(_is_landscape(self.size.width, self.size.height))
 
         naob_panel = self.query_one("#naob-panel")
         naob_panel.border_title = "naob.no"
@@ -211,10 +215,10 @@ class KryssordApp(App):
             landscape = (event.pixel_size.width / event.pixel_size.height) >= LAYOUT_SWITCH_ASPECT
         else:
             landscape = _is_landscape(event.size.width, event.size.height)
-        self.query_one("#main-row").set_class(not landscape, "stacked")
+        self._apply_landscape(landscape)
 
-    def _update_layout_orientation(self, width: int, height: int) -> None:
-        self.query_one("#main-row").set_class(not _is_landscape(width, height), "stacked")
+    def _apply_landscape(self, landscape: bool) -> None:
+        self.query_one("#main-row").set_class(not landscape, "stacked")
 
     def on_input_changed(self, event: Input.Changed) -> None:
         if event.input.id not in ("word", "pattern"):

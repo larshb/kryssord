@@ -23,25 +23,8 @@ def parse_search_results(html: str) -> list[NaobSearchEntry]:
             continue
         word = link.get_text(strip=True)
         slug = link.get("href", "").removeprefix("/ordbok/")
-
-        word_class_tag = item.select_one("span.ordklasse-shortform")
-        word_class = word_class_tag.get_text(strip=True) if word_class_tag else None
-
-        short_html = item.select_one("div.page_shortHtml__EorPn")
-        short_definition = _definition_text(short_html, word_class_tag)
-
-        entries.append(
-            NaobSearchEntry(word=word, slug=slug, word_class=word_class, short_definition=short_definition)
-        )
+        entries.append(NaobSearchEntry(word=word, slug=slug))
     return entries
-
-
-def _definition_text(short_html, word_class_tag) -> str:
-    if short_html is None:
-        return ""
-    if word_class_tag is not None:
-        word_class_tag.extract()
-    return " ".join(short_html.get_text(" ", strip=True).split())
 
 
 def parse_entry(html: str, slug: str) -> NaobEntry | None:

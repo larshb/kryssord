@@ -1,7 +1,7 @@
 [project]
 name = "kryssord-tui"
 version = "0.1.0"
-description = "Terminal crossword-solving helper backed by kryssord.org"
+description = "Terminal crossword-solving helper backed by kryssord.org and naob.no"
 requires-python = ">=3.10"
 dependencies = [
     "requests>=2.31",
@@ -13,6 +13,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "pytest-asyncio>=0.23"]
+
+[project.scripts]
+kryssord = "kryssord.__main__:main"
 
 [build-system]
 requires = ["setuptools>=68"]

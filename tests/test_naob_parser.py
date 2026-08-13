@@ -13,9 +13,6 @@ def test_parses_search_results():
     first = results[0]
     assert first.word == "hund"
     assert first.slug == "hund"
-    assert first.word_class == "substantiv"
-    assert "rovdyr" in first.short_definition
-    assert "substantiv" not in first.short_definition  # word class stripped out
 
 
 def test_parses_full_entry_with_senses_examples_etymology_and_idioms():

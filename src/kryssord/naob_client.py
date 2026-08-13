@@ -37,7 +37,7 @@ class NaobClient(CachedHttpClient):
             location = response.headers.get("Location", "")
             slug = location.removeprefix("/ordbok/")
             if location.startswith("/ordbok/") and slug:
-                return [NaobSearchEntry(word=query, slug=slug, word_class=None, short_definition="")]
+                return [NaobSearchEntry(word=query, slug=slug)]
             return []
         response.raise_for_status()
         return parse_search_results(response.text)
